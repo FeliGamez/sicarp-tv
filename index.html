@@ -218,7 +218,7 @@
 <!-- NAVEGACIÓN Y CABECERA GLOBAL -->
 <nav id="appHeader" class="hidden">
   <div class="nav-brand">
-    SiCARP-TV <span>v3.0</span>
+    SiCARP-TV <span>v2.0</span>
   </div>
   <div class="nav-user">
     <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; background: #0f172a; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color);">
@@ -542,11 +542,11 @@
   <div class="pdf-footer" id="pdfFooterText">RUTINA DE PROGRAMA</div>
 </div>
 
-<!-- FIREBASE SDKS & NÚCLEO DE APLICACIÓN CON SYNC CLOUD REAL -->
+<!-- FIREBASE SDKS & NÚCLEO CON REALTIME DATABASE (CON AUTENTICACIÓN) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCqXF8iasjqF3G8UsSyvOC1Gu8PF1msBNQ",
@@ -560,7 +560,7 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  const database = getDatabase(app);
   const auth = getAuth(app);
 
   const defaultDb = {
@@ -609,23 +609,23 @@
   window.activeRoutineId = null;
   window.tempProgramLogo = '';
 
-  const docRef = doc(db, 'sicarptv_sync', 'main_database');
+  const dbRef = ref(database, 'sicarptv_sync/main_database');
 
   async function initFirebaseSync() {
     try {
       await signInAnonymously(auth);
-      const snap = await getDoc(docRef);
-      if (snap.exists()) {
-        window.dbState = snap.data();
+      const snapshot = await get(dbRef);
+      if (snapshot.exists()) {
+        window.dbState = snapshot.val();
         localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
         refreshActiveViews();
       } else {
-        await setDoc(docRef, window.dbState);
+        await set(dbRef, window.dbState);
       }
 
-      onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-          window.dbState = docSnap.data();
+      onValue(dbRef, (snapshot) => {
+        if (snapshot.exists()) {
+          window.dbState = snapshot.val();
           localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
           refreshActiveViews();
           document.getElementById('syncDot').style.background = '#22c55e';
@@ -647,7 +647,7 @@
     try {
       document.getElementById('syncDot').style.background = '#3b82f6';
       document.getElementById('syncText').innerText = 'Guardando...';
-      await setDoc(docRef, window.dbState);
+      await set(dbRef, window.dbState);
       document.getElementById('syncDot').style.background = '#22c55e';
       document.getElementById('syncText').innerText = 'Sincronizado Cloud';
     } catch (e) {
@@ -671,7 +671,6 @@
     }
   }
 
-  // LOGICA GENERAL DE LA APP
   window.saveDb = function() {
     window.saveDbCloud();
   }
@@ -1443,7 +1442,6 @@
     });
 
     document.body.appendChild(container);
-    const now = new Date();
     const filename = `${prog.name} - SELECCION DE RUTINAS.pdf`;
     const opt = {
       margin: [10, 10, 10, 10],
@@ -1466,20 +1464,6 @@
   function buildPdfDomIntoElement(r, prog, parentEl) {
     const dayName = getDayNameFromDate(r.date).toUpperCase();
     const timeText = (prog && prog.timeStart) ? `${prog.timeStart}-${prog.timeEnd} HS` : '';
-    let secSecsNoTanda = 0;
-    let secSecsTotal = 0;
-    let tandasCount = 0;
-    let secCount = 0;
-
-    (r.routine || []).forEach(item => {
-      if (item.type === 'tanda') tandasCount++;
-      else secCount++;
-      const parts = item.duration.split(':');
-      const s = (parseInt(parts[0])||0)*60 + (parseInt(parts[1])||0);
-      secSecsTotal += s;
-      if (item.type !== 'tanda') secSecsNoTanda += s;
-    });
-
     const now = new Date();
     const timeFormatted = `${now.toLocaleDateString()} A LAS ${now.toLocaleTimeString()} HS`;
 
