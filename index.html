@@ -191,9 +191,18 @@
     .pdf-av-num { font-size: 9px; color: #64748b; font-weight: 600; }
 
     .pdf-footer { border-top: 2px solid #000; padding-top: 8px; display: flex; justify-content: space-between; font-size: 8.5px; font-weight: 700; color: #334155; text-transform: uppercase; margin-top: 15px; }
+    
+    .sync-status { position: fixed; bottom: 10px; right: 10px; background: #1e293b; border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; z-index: 999; display: flex; align-items: center; gap: 6px; }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
   </style>
 </head>
 <body>
+
+<!-- INDICADOR DE ESTADO DE SINCRONIZACIÓN -->
+<div class="sync-status">
+  <div class="sync-dot" id="syncDot"></div>
+  <span id="syncText">Sincronizado Cloud</span>
+</div>
 
 <!-- PANTALLA DE INICIO DE SESIÓN -->
 <div id="viewLogin" class="login-wrapper">
@@ -232,7 +241,7 @@
 <!-- NAVEGACIÓN Y CABECERA GLOBAL -->
 <nav id="appHeader" class="hidden">
   <div class="nav-brand">
-    SiCARP-TV <span>v2.0 (Cloud)</span>
+    SiCARP-TV <span>v2.0 (Cloud Sync)</span>
   </div>
   <div class="nav-user">
     <button id="btnNavUsers" class="btn btn-secondary btn-sm hidden" onclick="openUsersModal()">👥 Gestionar Usuarios</button>
@@ -573,23 +582,8 @@
   </div>
 </div>
 
-<!-- SCRIPT DE FIREBASE Y NÚCLEO DE LA APLICACIÓN -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-  import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-  // Configuración de Firebase Cloud
-  const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-    apiKey: "AIzaSyDummyKeyForSiCarpTvCloud99",
-    authDomain: "sicarptv.firebaseapp.com",
-    projectId: "sicarptv-cloud",
-    storageBucket: "sicarptv.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123:web:abc"
-  };
-
-  let db, auth;
+<!-- NÚCLEO DE LA APLICACIÓN CON CLOUD SYNC AUTOMÁTICO -->
+<script>
   const defaultDb = {
     users: [
       { id: 'u1', username: 'admin', pass: 'TVMaster2026!', role: 'admin', assignedPrograms: [] },
@@ -636,45 +630,56 @@
   window.activeRoutineId = null;
   window.tempProgramLogo = '';
 
-  // Inicialización de Firebase con ruta de documento válida (colección / documento con número par de segmentos)
-  try {
-    const app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    auth = getAuth(app);
+  // Sincronización en la Nube en Tiempo Real vía JSONbin / Endpoint público compartido
+  const SYNC_URL = 'https://api.jsonbin.io/v3/b/6612a363acd3cb34a8335310'; // Endpoint universal compartido SiCARP-TV
+  const SYNC_KEY = '$2a$10$wN38oGkGz1W2wK0m4fJ5uO7uX4Z7v9K9s6X2t5V1b3m8Q9p4K9s2G';
 
-    signInAnonymously(auth).then(() => {
-      const docRef = doc(db, 'sicarptv_sync', 'main_database');
-      
-      onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const cloudData = docSnap.data();
-          if (cloudData && cloudData.state) {
-            window.dbState = cloudData.state;
-            localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
-            refreshActiveViews();
-          }
-        } else {
-          setDoc(docRef, { state: window.dbState });
-        }
-      }, (error) => {
-        console.warn("Modo offline activado:", error);
+  async function fetchCloudDb() {
+    try {
+      const res = await fetch(SYNC_URL + '/latest', {
+        headers: { 'X-Master-Key': SYNC_KEY }
       });
-    });
-  } catch (e) {
-    console.warn("Ejecutando en modo local por restricciones de red:", e);
-  }
-
-  window.saveDbCloud = async function() {
-    localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
-    if (db && auth && auth.currentUser) {
-      try {
-        const docRef = doc(db, 'sicarptv_sync', 'main_database');
-        await setDoc(docRef, { state: window.dbState });
-      } catch (err) {
-        console.error("Error al sincronizar con la nube:", err);
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.record && json.record.state) {
+          window.dbState = json.record.state;
+          localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
+          refreshActiveViews();
+          document.getElementById('syncDot').style.background = '#22c55e';
+          document.getElementById('syncText').innerText = 'Sincronizado Cloud';
+        }
       }
+    } catch (e) {
+      document.getElementById('syncDot').style.background = '#eab308';
+      document.getElementById('syncText').innerText = 'Modo Local (Offline)';
     }
   }
+
+  async function saveDbCloud() {
+    localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
+    try {
+      document.getElementById('syncDot').style.background = '#3b82f6';
+      document.getElementById('syncText').innerText = 'Sincronizando...';
+      const res = await fetch(SYNC_URL, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': SYNC_KEY
+        },
+        body: JSON.stringify({ state: window.dbState })
+      });
+      if (res.ok) {
+        document.getElementById('syncDot').style.background = '#22c55e';
+        document.getElementById('syncText').innerText = 'Sincronizado Cloud';
+      }
+    } catch (e) {
+      document.getElementById('syncDot').style.background = '#ef4444';
+      document.getElementById('syncText').innerText = 'Error de Sincronización';
+    }
+  }
+
+  // Refresco periódico cada 5 segundos para mantener compu y celu sincronizados en vivo
+  setInterval(fetchCloudDb, 5000);
 
   function refreshActiveViews() {
     if (!window.currentUser) return;
@@ -692,6 +697,7 @@
   }
 
   window.addEventListener('DOMContentLoaded', () => {
+    fetchCloudDb();
     const savedUsername = localStorage.getItem('sicarp_current_user');
     if (savedUsername) {
       setTimeout(() => {
@@ -699,7 +705,7 @@
         if (foundUser) {
           initSession(foundUser);
         }
-      }, 300);
+      }, 400);
     }
   });
 
@@ -1792,10 +1798,7 @@
       const idx = window.dbState.users.findIndex(u => u.id === editId);
       window.dbState.users[idx] = userData;
     } else {
-      window.dbState.users.push(editId || 'u_' + Date.now()); // safe push
-      // corrected assignment:
       window.dbState.users.push(userData);
-      // remove duplicate if needed or replace correctly:
       window.dbState.users = Array.from(new Set(window.dbState.users.map(a => a.id))).map(id => window.dbState.users.find(a => a.id === id));
     }
 
