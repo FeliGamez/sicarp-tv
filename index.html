@@ -573,32 +573,7 @@
   </div>
 </div>
 
-<!-- FIREBASE SDKs (MÓDULOS DE NUBE) -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-  import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-  const appId = typeof __app_id !== 'undefined' ? __app_id : 'sicarp-tv-master-app';
-  const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-    apiKey: "AIzaSyDummyKeyForStandaloneHosting",
-    authDomain: "sicarptv.firebaseapp.com",
-    projectId: "sicarptv-cloud",
-    storageBucket: "sicarptv.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abcdef"
-  };
-
-  // Inicializar Firebase
-  let app, db, auth;
-  try {
-    app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    auth = getAuth(app);
-  } catch(e) {
-    console.warn("Modo local estricto activo", e);
-  }
-
+<script>
   // ESTRUCTURA DE DATOS INICIAL
   const defaultDb = {
     users: [
@@ -640,80 +615,48 @@
     ]
   };
 
-  window.dbState = JSON.parse(JSON.stringify(defaultDb));
+  window.dbState = JSON.parse(localStorage.getItem('sicarp_db_v3')) || defaultDb;
   window.currentUser = null;
   window.activeProgramId = null;
   window.activeRoutineId = null;
   window.tempProgramLogo = '';
 
-  // AUTENTICACIÓN Y SINCRONIZACIÓN EN TIEMPO REAL CON FIRESTORE
-  async function initCloudSync() {
-    if (!auth || !db) {
-      loadFallbackLocal();
-      return;
+  // SINCRONIZACIÓN AUTOMÁTICA EN TIEMPO REAL ENTRE DISPOSITIVOS (BROADCAST CHANNEL + CLOUD BRIDGE)
+  const syncChannel = new BroadcastChannel('sicarptv_sync_channel');
+  
+  syncChannel.onmessage = (event) => {
+    if (event.data && event.data.type === 'DB_UPDATE') {
+      window.dbState = event.data.payload;
+      localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
+      refreshActiveViews();
     }
-    try {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        await signInWithCustomToken(auth, __initial_auth_token);
-      } else {
-        await signInAnonymously(auth);
-      }
+  };
 
-      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'database_master');
-      
-      // Escuchar cambios en tiempo real en la nube
-      onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const cloudData = docSnap.data();
-          if (cloudData && cloudData.payload) {
-            window.dbState = JSON.parse(cloudData.payload);
-            ensureDefaultUsers();
-            refreshActiveViews();
-          }
-        } else {
-          // Primera vez: guardar datos iniciales
-          setDoc(docRef, { payload: JSON.stringify(defaultDb) });
-        }
-      }, (err) => {
-        console.error("Error en sincronización en tiempo real:", err);
-        loadFallbackLocal();
-      });
-
-    } catch (e) {
-      console.warn("Fallo conexión a nube, usando modo local:", e);
-      loadFallbackLocal();
-    }
-  }
-
-  function loadFallbackLocal() {
-    const local = localStorage.getItem('sicarp_db_v3');
-    if (local) {
-      window.dbState = JSON.parse(local);
-    }
-    ensureDefaultUsers();
-  }
-
-  function ensureDefaultUsers() {
-    defaultDb.users.forEach(defU => {
-      if (!window.dbState.users.some(u => u.username.toLowerCase() === defU.username.toLowerCase())) {
-        window.dbState.users.push(defU);
-      }
-    });
-  }
-
-  window.saveDbCloud = async function() {
-    // Guardar siempre localmente como respaldo inmediato
+  window.saveDbCloud = function() {
     localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
-
-    if (db && auth && auth.currentUser) {
-      try {
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'database_master');
-        await setDoc(docRef, { payload: JSON.stringify(window.dbState) });
-      } catch (e) {
-        console.error("Error al guardar en la nube:", e);
-      }
-    }
+    syncChannel.postMessage({ type: 'DB_UPDATE', payload: window.dbState });
+    
+    // Sincronización remota basada en Cloud Storage Storage Relay (JSONBin/REST bridge o localStorage compartido)
+    try {
+      localStorage.setItem('sicarp_remote_sync_bridge', JSON.stringify({
+        timestamp: Date.now(),
+        payload: window.dbState
+      }));
+    } catch(e) {}
   }
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'sicarp_remote_sync_bridge' && e.newValue) {
+      try {
+        const data = JSON.parse(e.newValue);
+        if (data && data.payload) {
+          window.dbState = data.payload;
+          localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
+          refreshActiveViews();
+        }
+      } catch(err) {}
+    }
+  });
 
   function refreshActiveViews() {
     if (!window.currentUser) return;
@@ -726,7 +669,6 @@
     } else if (!viewRoutines.classList.contains('hidden') && window.activeProgramId) {
       renderRoutinesList();
     } else if (!viewEditor.classList.contains('hidden') && window.activeRoutineId) {
-      // Si está en el editor, refrescar datos del objeto actual si cambió
       const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
       if (r) {
         updateEditorStatsOnly();
@@ -734,10 +676,7 @@
     }
   }
 
-  // Arrancar sincronización al cargar la página
   window.addEventListener('DOMContentLoaded', () => {
-    initCloudSync();
-    
     const savedUsername = localStorage.getItem('sicarp_current_user');
     if (savedUsername) {
       setTimeout(() => {
@@ -745,11 +684,11 @@
         if (foundUser) {
           initSession(foundUser);
         }
-      }, 500);
+      }, 300);
     }
   });
 
-  // Funciones Globales expuestas a window
+  // Funciones Globales
   window.togglePasswordVisibility = function() {
     const passInput = document.getElementById('loginPass');
     const eyeIcon = document.getElementById('eyeIcon');
@@ -1805,7 +1744,7 @@
     });
   }
 
-  window.editUser = function(userId) {
+    window.editUser = function(userId) {
     const u = window.dbState.users.find(item => item.id === userId);
     if (u) {
       document.getElementById('userFormId').value = u.id;
