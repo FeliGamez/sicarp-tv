@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SiCARP-TV - Sistema de Creación y Administración de Rutinas y Programas Televisivos</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+      --tanda-bg: #451a1a;
+      --tanda-border: #991b1b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; }
+    
+    .hidden { display: none !important; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    
+    /* BUTTONS */
+    .btn { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; font-size: 0.88rem; transition: background 0.2s; }
+    .btn:hover { background: var(--accent-hover); }
+    .btn-secondary { background: #334155; }
+    .btn-secondary:hover { background: #475569; }
+    .btn-danger { background: #dc2626; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-success { background: #16a34a; }
+    .btn-success:hover { background: #15803d; }
+    .btn-sm { padding: 4px 8px; font-size: 0.78rem; }
+    
+    /* INPUTS & FORMS */
+    input[type="text"], input[type="password"], select, textarea {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      width: 100%;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; }
+
+    /* Custom input & select table styling */
+    td input[type="text"], td select {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    td input[type="text"]:focus, td select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+
+    /* MAIN NAV & CONTAINER */
+    .container { max-width: 1350px; margin: 0 auto; padding: 20px; }
+    nav { background: #1e293b; border-bottom: 1px solid var(--border-color); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .nav-brand { font-weight: 800; font-size: 1.25rem; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .nav-brand span { font-size: 0.75rem; background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
+    .nav-user { display: flex; align-items: center; gap: 15px; font-size: 0.85rem; color: var(--text-muted); }
+    .user-badge { background: #0f172a; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); color: #60a5fa; font-weight: 600; }
+
+    /* LOGIN SCREEN */
+    .login-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%); }
+    .login-card { background: var(--card-bg); border: 1px solid var(--border-color); width: 100%; max-width: 400px; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    .login-title { font-size: 1.4rem; font-weight: 800; text-align: center; margin-bottom: 6px; }
+    .login-subtitle { font-size: 0.8rem; text-align: center; color: var(--text-muted); margin-bottom: 24px; }
+    
+    .password-input-container { position: relative; display: flex; align-items: center; }
+    .password-input-container input { padding-right: 40px; }
+    .toggle-password-btn { 
+      position: absolute; 
+      right: 10px; 
+      background: none; 
+      border: none; 
+      color: var(--text-muted); 
+      cursor: pointer; 
+      padding: 4px; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s;
+    }
+    .toggle-password-btn:hover { color: #ffffff; }
+    .toggle-password-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    
+    /* DASHBOARD / GRID PROGRAMAS */
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .section-title { font-size: 1.3rem; font-weight: 700; }
+    
+    .grid-programs { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+    .card-program { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s, border-color 0.2s; }
+    .card-program:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .card-title { font-size: 1.15rem; font-weight: 700; }
+    .card-channel { font-size: 0.8rem; color: #60a5fa; font-weight: 600; text-transform: uppercase; }
+    .card-logo { max-height: 40px; max-width: 100px; object-fit: contain; }
+    .card-meta { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px; display: flex; flex-direction: column; gap: 4px; }
+    .card-actions { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 12px; }
+
+    /* RUTINA EDITOR STYLES */
+    .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; }
+    .stats-bar { display: flex; gap: 20px; background: #0f172a; padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; font-weight: 600; font-size: 0.85rem; flex-wrap: wrap; }
+    .stat-item { display: flex; gap: 6px; }
+    .stat-value { color: #60a5fa; font-weight: 700; }
+    
+    table.routine-table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); }
+    table.routine-table th, table.routine-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); vertical-align: middle; }
+    table.routine-table th { background: #0f172a; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+    
+    tr.is-tanda { background: var(--tanda-bg) !important; }
+    tr.is-tanda td { border-color: var(--tanda-border); }
+    
+    .drag-handle { cursor: grab; text-align: center; color: var(--text-muted); width: 30px; user-select: none; }
+    .block-cell { text-align: center; font-weight: 800; font-size: 1.1rem; background: #0f172a; color: #60a5fa; width: 60px; }
+    .sec-cell { text-align: center; font-weight: 700; color: var(--text-muted); width: 45px; }
+
+    .av-container { display: flex; flex-direction: column; gap: 4px; }
+    .custom-input { margin-top: 4px; }
+
+    /* MODAL */
+    .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .modal-content { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 24px; width: 100%; max-width: 550px; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+
+    /* DAYS SELECTION PILLS */
+    .days-picker { display: flex; gap: 6px; flex-wrap: wrap; }
+    .day-pill { background: #0f172a; border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; user-select: none; }
+    .day-pill.selected { background: var(--accent); border-color: var(--accent); color: white; }
+
+    /* MODOS VIVO CONDUCCION */
+    .live-mode input, .live-mode select { pointer-events: none !important; opacity: 0.9; }
+    .live-mode .no-print { display: none !important; }
+
+    /* ESTILOS DE DOCUMENTO PDF EXPORTABLE */
+    #pdfTemplate {
+      display: none;
+      background: #ffffff;
+      color: #000000;
+      padding: 30px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .pdf-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 12px; }
+    .pdf-title-block h1 { font-size: 22px; font-weight: 800; text-transform: uppercase; margin-bottom: 2px; color: #000; line-height: 1.1; }
+    .pdf-title-block h2 { font-size: 12px; color: #475569; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+    .pdf-title-block p { font-size: 11px; color: #1e293b; font-weight: 800; text-transform: uppercase; }
+    .pdf-logo { max-height: 55px; max-width: 180px; object-fit: contain; }
+
+    .pdf-meta-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 10.5px; border: 1px solid #cbd5e1; background: #ffffff; }
+    .pdf-meta-table td { padding: 5px 8px; border: 1px solid #cbd5e1; }
+    .pdf-meta-label { font-weight: 700; color: #475569; text-transform: uppercase; font-size: 9.5px; }
+    .pdf-meta-val { font-weight: 700; color: #000; }
+    .pdf-meta-subtd { background: #f8fafc; font-size: 9.5px; text-align: center; }
+
+    .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10.5px; background: #ffffff; }
+    .pdf-table th { background: #000000 !important; color: #ffffff !important; padding: 6px 8px; text-transform: uppercase; font-size: 9px; font-weight: 800; letter-spacing: 0.5px; border: 1px solid #000; text-align: left; }
+    .pdf-table td { padding: 7px 8px; border: 1px solid #cbd5e1; vertical-align: middle; color: #000; background: #ffffff; }
+    
+    .pdf-tr-tanda td { background: #fee2e2 !important; border-color: #fca5a5 !important; }
+    .pdf-tanda-title { font-weight: 800; color: #991b1b; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.5px; text-align: center; }
+    
+    .pdf-block-tag { font-weight: 800; font-size: 12px; color: #000000; text-align: center; vertical-align: middle; }
+    .pdf-sec-tag { font-weight: 700; color: #475569; text-align: center; width: 30px; }
+    .pdf-time-tag { font-weight: 700; font-family: monospace; font-size: 11px; text-align: center; width: 65px; }
+    
+    .pdf-title-main { font-weight: 800; font-size: 11px; color: #000000; margin-bottom: 2px; }
+    .pdf-style-sub { font-weight: 600; text-transform: uppercase; font-size: 9px; color: #64748b; }
+    
+    .pdf-av-main { font-size: 10px; font-weight: 700; color: #1e293b; text-transform: uppercase; margin-bottom: 2px; }
+    .pdf-av-num { font-size: 9px; color: #64748b; font-weight: 600; }
+
+    .pdf-footer { border-top: 2px solid #000; padding-top: 8px; display: flex; justify-content: space-between; font-size: 8.5px; font-weight: 700; color: #334155; text-transform: uppercase; margin-top: 15px; }
+  </style>
+</head>
+<body>
+
+<!-- PANTALLA DE INICIO DE SESIÓN -->
+<div id="viewLogin" class="login-wrapper">
+  <div class="login-card">
+    <div class="login-title">SiCARP-TV</div>
+    <div class="login-subtitle">Sistema de Creación y Administración de Rutinas y Programas Televisivos</div>
+    <div class="login-subtitle" style="margin-top: -18px; margin-bottom: 20px; font-weight: 600; color: #60a5fa;">Creado por Felipe Gámez</div>
+    
+    <div id="loginError" class="hidden" style="background:#451a1a; color:#f87171; border:1px solid #991b1b; padding:8px 12px; border-radius:6px; font-size:0.8rem; margin-bottom:12px; text-align:center;">
+      Usuario o contraseña incorrectos
+    </div>
+
+    <form id="loginForm" autocomplete="on" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label for="loginUser">Usuario</label>
+        <input type="text" id="loginUser" name="username" placeholder="Usuario" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label for="loginPass">Contraseña</label>
+        <div class="password-input-container">
+          <input type="password" id="loginPass" name="password" placeholder="Contraseña" autocomplete="current-password" required>
+          <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility()" title="Ver u ocultar contraseña" id="btnTogglePass">
+            <!-- Icono Ojo Minimalista Vectorial (2D SVG) -->
+            <svg id="eyeIcon" viewBox="0 0 24 24">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-success" style="width: 100%; justify-content: center; padding: 12px; margin-top: 10px;">Ingresar al Sistema</button>
+    </form>
+  </div>
+</div>
+
+<!-- NAVEGACIÓN Y CABECERA GLOBAL -->
+<nav id="appHeader" class="hidden">
+  <div class="nav-brand">
+    SiCARP-TV <span>v2.0</span>
+  </div>
+  <div class="nav-user">
+    <button id="btnNavUsers" class="btn btn-secondary btn-sm hidden" onclick="openUsersModal()">👥 Gestionar Usuarios</button>
+    <div>Usuario: <span id="navUsername" class="user-badge">Admin</span></div>
+    <button class="btn btn-danger btn-sm" onclick="logout()">Cerrar Sesión</button>
+  </div>
+</nav>
+
+<!-- CONTENEDOR PRINCIPAL -->
+<div id="mainContainer" class="container hidden">
+
+  <!-- VISTA 1: PROGRAMAS DE TV -->
+  <div id="viewPrograms">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Programas de Televisión</div>
+        <div style="font-size: 0.85rem; color: var(--text-muted);">Seleccioná un programa para ver o crear sus escaletas</div>
+      </div>
+      <button id="btnNewProgram" class="btn" onclick="openProgramModal()">➕ Crear Nuevo Programa</button>
+    </div>
+
+    <div class="grid-programs" id="programsGrid">
+      <!-- Carga dinámica -->
+    </div>
+  </div>
+
+  <!-- VISTA 2: LISTA DE RUTINAS DE UN PROGRAMA -->
+  <div id="viewRoutinesList" class="hidden">
+    <div style="margin-bottom: 15px;">
+      <button class="btn btn-secondary btn-sm" onclick="navToPrograms()">← Volver a Programas</button>
+    </div>
+
+    <div class="section-header">
+      <div>
+        <div class="section-title" id="routineListProgTitle">Nombre Programa</div>
+        <div style="font-size: 0.85rem; color: var(--text-muted);" id="routineListProgSub">Emisiones y Escaletas históricas</div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button id="btnExportSelectedPDF" class="btn btn-secondary" onclick="exportBatchPDF()">📄 Exportar Selección a PDF</button>
+        <button id="btnNewRoutine" class="btn btn-success" onclick="openNewRoutineDialog()">➕ Crear Nueva Rutina</button>
+      </div>
+    </div>
+
+    <table class="routine-table">
+      <thead>
+        <tr>
+          <th style="width: 30px; text-align: center;"><input type="checkbox" onchange="toggleSelectAllRoutines(this)"></th>
+          <th style="width: 90px; text-align: center;">PGM N°</th>
+          <th style="width: 140px;">FECHA / DÍA</th>
+          <th>DURACIÓN TOTAL</th>
+          <th>CONDUCTORES</th>
+          <th>PRODUCCIÓN</th>
+          <th style="width: 150px; text-align: center;">ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody id="routinesListBody">
+        <!-- Carga dinámica -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- VISTA 3: EDITOR DE RUTINA / ESCALETA DE TRANSMISION -->
+  <div id="viewRoutineEditor" class="hidden">
+    <div style="margin-bottom: 15px; display: flex; justify-content: space-between;">
+      <button class="btn btn-secondary btn-sm" onclick="navToRoutinesList(activeProgramId)">← Volver a Rutinas del Programa</button>
+      <div style="display: flex; gap: 8px;">
+        <button id="btnEditorExportPDF" class="btn btn-success" onclick="downloadPDF()">📄 Descargar PDF Oficial</button>
+      </div>
+    </div>
+
+    <!-- Metadatos de la Rutina -->
+    <div class="meta-grid" id="editorMetaGrid">
+      <div class="field">
+        <label>Canal / Medio</label>
+        <input type="text" id="progChannel" onfocus="this.select()" oninput="saveCurrentRoutineMeta()">
+      </div>
+      <div class="field">
+        <label>Nombre del Programa</label>
+        <input type="text" id="progName" onfocus="this.select()" oninput="saveCurrentRoutineMeta()">
+      </div>
+      <div class="field">
+        <label>PGM N°</label>
+        <input type="text" id="progNumber" onfocus="this.select()" oninput="saveCurrentRoutineMeta()">
+      </div>
+      <div class="field">
+        <label>Fecha de Emisión</label>
+        <input type="text" id="progDate" placeholder="DD/MM/AAAA" onfocus="this.select()" oninput="handleEditorDateInput(this)">
+      </div>
+      <div class="field">
+        <label>Conducción</label>
+        <input type="text" id="progHosts" onfocus="this.select()" oninput="saveCurrentRoutineMeta()">
+      </div>
+      <div class="field">
+        <label>Producción (Rutina / General)</label>
+        <input type="text" id="progProducers" onfocus="this.select()" oninput="saveCurrentRoutineMeta()">
+      </div>
+    </div>
+
+    <!-- Barra de Estadísticas -->
+    <div class="stats-bar">
+      <div class="stat-item">Secciones: <span class="stat-value" id="statSecs">0</span></div>
+      <div class="stat-item">Tandas: <span class="stat-value" id="statTandas">0</span></div>
+      <div class="stat-item">Bloques: <span class="stat-value" id="statBlocks">0</span></div>
+      <div class="stat-item">Duración sin Tandas: <span class="stat-value" id="statDurNoTanda">00:00</span></div>
+      <div class="stat-item">Duración TOTAL (con Tandas): <span class="stat-value" id="statDurTotal">00:00</span></div>
+    </div>
+
+    <!-- Botones de Acción Editor -->
+    <div class="actions-bar no-print" style="margin-bottom: 15px; display: flex; justify-content: space-between;">
+      <div style="display: flex; gap: 8px;">
+        <button class="btn" onclick="addRow('sec')">➕ Agregar Sección</button>
+        <button class="btn btn-danger" onclick="addRow('tanda')">📺 Agregar Tanda</button>
+      </div>
+      <button class="btn btn-secondary" onclick="resetRoutineData()">🗑️ Vaciar Rutina</button>
+    </div>
+
+    <!-- Tabla Principal del Editor -->
+    <table class="routine-table" id="editorTable">
+      <thead>
+        <tr>
+          <th class="no-print" style="width: 30px;"></th>
+          <th style="width: 45px;">N°</th>
+          <th style="width: 65px;">Bloque</th>
+          <th style="width: 80px;">Duración</th>
+          <th style="width: 130px;">Estilo</th>
+          <th>Título de la Sección / Nota</th>
+          <th>Detalle / Explicación</th>
+          <th style="width: 170px;">Soporte AV & N° Archivo</th>
+          <th class="no-print" style="width: 40px;"></th>
+        </tr>
+      </thead>
+      <tbody id="routineBody">
+        <!-- Generado con JS -->
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- MODAL CREACIÓN / EDICIÓN DE PROGRAMA -->
+<div id="modalProgram" class="modal-backdrop hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div style="font-weight: 700; font-size: 1.1rem;" id="modalProgTitle">Nuevo Programa</div>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modalProgram')">✕</button>
+    </div>
+    <form onsubmit="handleSaveProgram(event)">
+      <input type="hidden" id="progFormId">
+      
+      <div class="form-group">
+        <label>Nombre del Programa</label>
+        <input type="text" id="progFormName" placeholder="Nombre del Programa" required>
+      </div>
+      <div class="form-group">
+        <label>Canal / Medio</label>
+        <input type="text" id="progFormChannel" placeholder="Nombre del Canal" required>
+      </div>
+      <div class="form-group">
+        <label>Logo del Programa</label>
+        <input type="file" id="progFormLogoInput" accept="image/*" onchange="handleProgramLogoUpload(event)">
+        <div id="progFormLogoPreviewContainer" style="display:none; align-items:center; gap:10px; margin-top:8px;">
+          <img id="progFormLogoPreview" style="max-height: 50px;" alt="Preview Logo">
+          <button type="button" class="btn btn-danger btn-sm" onclick="removeProgramLogo()">Quitar Logo</button>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <div class="form-group" style="flex: 1;">
+          <label>Conducción Predeterminada</label>
+          <input type="text" id="progFormHosts" placeholder="Conductor 1, Conductor 2">
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label>Producción Predeterminada</label>
+          <input type="text" id="progFormProducers" placeholder="Productor A, Productor B">
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <div class="form-group" style="flex: 1;">
+          <label>Fecha 1ª Emisión (DD/MM/AAAA)</label>
+          <input type="text" id="progFormFirstDate" placeholder="DD/MM/AAAA" oninput="handleFirstDateInput(this)" required>
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label>Horario Habitual (Desde - Hasta)</label>
+          <div style="display:flex; gap:4px;">
+            <input type="text" id="progFormTimeStart" placeholder="15:00" oninput="handleTimeInput(this)">
+            <input type="text" id="progFormTimeEnd" placeholder="17:00" oninput="handleTimeInput(this)">
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Días Habituales de Emisión</label>
+        <div class="days-picker" id="daysPicker">
+          <div class="day-pill" data-day="1" onclick="toggleDayPill(this)">L</div>
+          <div class="day-pill" data-day="2" onclick="toggleDayPill(this)">M</div>
+          <div class="day-pill" data-day="3" onclick="toggleDayPill(this)">X</div>
+          <div class="day-pill" data-day="4" onclick="toggleDayPill(this)">J</div>
+          <div class="day-pill" data-day="5" onclick="toggleDayPill(this)">V</div>
+          <div class="day-pill" data-day="6" onclick="toggleDayPill(this)">S</div>
+          <div class="day-pill" data-day="0" onclick="toggleDayPill(this)">D</div>
+          <div class="day-pill" data-day="-1" onclick="toggleDayPill(this)" style="font-weight:normal;">Sin definir</div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalProgram')">Cancelar</button>
+        <button type="submit" class="btn btn-success">Guardar Programa</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL GESTIÓN DE USUARIOS -->
+<div id="modalUsers" class="modal-backdrop hidden">
+  <div class="modal-content" style="max-width: 650px;">
+    <div class="modal-header">
+      <div style="font-weight: 700; font-size: 1.1rem;">Gestión de Usuarios y Permisos</div>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modalUsers')">✕</button>
+    </div>
+    
+    <!-- Formulario Crear/Editar Usuario -->
+    <form onsubmit="handleSaveUser(event)" style="background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+      <input type="hidden" id="userFormId">
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Usuario</label>
+          <input type="text" id="userFormName" placeholder="Nombre" required>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Contraseña</label>
+          <input type="text" id="userFormPass" placeholder="Clave" required>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Rol</label>
+          <select id="userFormRole">
+            <option value="produccion">Producción</option>
+            <option value="conduccion">Conducción</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-group" style="margin-top: 10px; margin-bottom:0;">
+        <label>Programas Asignados</label>
+        <div id="userFormProgramsCheckboxes" style="display:flex; flex-wrap:wrap; gap:10px; background:var(--card-bg); padding:8px; border-radius:4px; max-height:80px; overflow-y:auto;">
+          <!-- JS checkboxes -->
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-sm btn-success" style="margin-top: 10px; width: 100%; justify-content: center;">Guardar Usuario</button>
+    </form>
+
+    <table class="routine-table">
+      <thead>
+        <tr>
+          <th>USUARIO</th>
+          <th>ROL</th>
+          <th>PROGRAMAS</th>
+          <th style="width: 80px; text-align: center;">ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody id="usersListBody">
+        <!-- Carga dinámica usuarios -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL NUEVA RUTINA (OPCIÓN DUPLICAR O DESDE CERO) -->
+<div id="modalNewRoutine" class="modal-backdrop hidden">
+  <div class="modal-content" style="max-width: 420px; text-align: center;">
+    <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 10px;">Crear Nueva Rutina</div>
+    <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
+      ¿Cómo querés inicializar la estructura de esta nueva emisión?
+    </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <button class="btn btn-secondary" style="justify-content: center; padding: 12px;" onclick="createNewRoutine(true)">
+        📋 Duplicar la última rutina emitida
+      </button>
+      <button class="btn" style="justify-content: center; padding: 12px;" onclick="createNewRoutine(false)">
+        ✨ Empezar de cero (100% limpia)
+      </button>
+    </div>
+    
+    <button class="btn btn-secondary btn-sm" style="margin-top: 15px;" onclick="closeModal('modalNewRoutine')">Cancelar</button>
+  </div>
+</div>
+
+<!-- PLANTILLA OCULTA EXCLUSIVA PARA EL PDF DESCARGABLE -->
+<div id="pdfTemplate">
+  <div class="pdf-header">
+    <div class="pdf-title-block">
+      <h1 id="pdfProgName">PROGRAMA EN VIVO</h1>
+      <h2 id="pdfProgChannel">CANAL</h2>
+      <p id="pdfPgmNum">RUTINA PGM-001</p>
+    </div>
+    <img id="pdfLogo" class="pdf-logo" style="display:none;" alt="Logo">
+  </div>
+
+  <table class="pdf-meta-table">
+    <tr>
+      <td><span class="pdf-meta-label">FECHA:</span> <span class="pdf-meta-val" id="pdfProgDate">01/11/2026</span></td>
+      <td><span class="pdf-meta-label">CONDUCCIÓN:</span> <span class="pdf-meta-val" id="pdfProgHosts">-</span></td>
+      <td><span class="pdf-meta-label">PRODUCCIÓN:</span> <span class="pdf-meta-val" id="pdfProgProducers">-</span></td>
+    </tr>
+    <tr>
+      <td colspan="3" style="padding:0;">
+        <table style="width:100%; border-collapse:collapse;">
+          <tr>
+            <td class="pdf-meta-subtd" style="width:20%; border-right:1px solid #cbd5e1;"><span class="pdf-meta-label">BLOQUES:</span> <span class="pdf-meta-val" id="pdfMetaBlocks">0</span></td>
+            <td class="pdf-meta-subtd" style="width:20%; border-right:1px solid #cbd5e1;"><span class="pdf-meta-label">TANDAS:</span> <span class="pdf-meta-val" id="pdfMetaTandas">0</span></td>
+            <td class="pdf-meta-subtd" style="width:20%; border-right:1px solid #cbd5e1;"><span class="pdf-meta-label">SECCIONES:</span> <span class="pdf-meta-val" id="pdfMetaSecs">0</span></td>
+            <td class="pdf-meta-subtd" style="width:20%; border-right:1px solid #cbd5e1;"><span class="pdf-meta-label">DUR. SIN TANDAS:</span> <span class="pdf-meta-val" id="pdfMetaNoTanda">00:00</span></td>
+            <td class="pdf-meta-subtd" style="width:20%;"><span class="pdf-meta-label">DUR. TOTAL:</span> <span class="pdf-meta-val" id="pdfMetaTotal">00:00</span></td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <table class="pdf-table">
+    <thead>
+      <tr>
+        <th style="width: 45px; text-align: center;">BLOQUE</th>
+        <th style="width: 30px; text-align: center;">N°</th>
+        <th>TÍTULO / ESTILO</th>
+        <th>DETALLE / NOTAS DE PISO</th>
+        <th style="width: 120px;">APOYO AV / N°</th>
+        <th style="width: 60px; text-align: center;">TIEMPO</th>
+      </tr>
+    </thead>
+    <tbody id="pdfTableBody">
+      <!-- Carga dinámica -->
+    </tbody>
+  </table>
+
+  <div class="pdf-footer" id="pdfFooterText">
+    RUTINA DE PROGRAMA
+  </div>
+</div>
+
+<script>
+  // ESTADO GLOBAL DE BASE DE DATOS LOCAL
+  const defaultDb = {
+    users: [
+      { id: 'u1', username: 'admin', pass: 'TVMaster2026!', role: 'admin', assignedPrograms: [] },
+      { id: 'u2', username: 'produccion', pass: 'produ123', role: 'produccion', assignedPrograms: [] },
+      { id: 'u3', username: 'conduccion', pass: 'vivo123', role: 'conduccion', assignedPrograms: [] }
+    ],
+    programs: [
+      {
+        id: 'p1',
+        name: 'Programa Ejemplo',
+        channel: 'Canal Ejemplo',
+        logo: '',
+        defaultHosts: 'Conductor A, Conductor B',
+        defaultProducers: 'Productor A',
+        firstDate: '30/10/2026',
+        timeStart: '15:00',
+        timeEnd: '17:00',
+        daysList: [1, 2, 3, 4, 5]
+      }
+    ],
+    routines: [
+      {
+        id: 'r1',
+        programId: 'p1',
+        pgmNum: '001',
+        date: '30/10/2026',
+        channel: 'Canal Ejemplo',
+        name: 'Programa Ejemplo',
+        hosts: 'Conductor A, Conductor B',
+        producers: 'Productor A',
+        routine: [
+          { type: 'sec', duration: '01:20', style: 'APERTURA', styleCustom: '', title: 'Apertura de Programa', detail: 'Presentación del programa y sumario', av: 'NINGUNO', avCustom: '', avNum: '' },
+          { type: 'sec', duration: '15:00', style: 'ENTREVISTA', styleCustom: '', title: 'Nota Principal', detail: 'Entrevista en piso', av: 'APOYO', avCustom: '', avNum: '102' },
+          { type: 'tanda', duration: '05:00', style: 'TANDA', title: 'TANDA COMERCIAL N°1', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' },
+          { type: 'sec', duration: '10:00', style: 'INFORME', styleCustom: '', title: 'Informe Especial', detail: 'Video grabado', av: 'TOTAL', avCustom: '', avNum: '088' }
+        ]
+      }
+    ]
+  };
+
+  let db = JSON.parse(localStorage.getItem('sicarp_db_v3')) || defaultDb;
+  let currentUser = null;
+  let activeProgramId = null;
+  let activeRoutineId = null;
+  let tempProgramLogo = '';
+
+  function togglePasswordVisibility() {
+    const passInput = document.getElementById('loginPass');
+    const eyeIcon = document.getElementById('eyeIcon');
+    if (passInput.type === 'password') {
+      passInput.type = 'text';
+      // Icono con tachado minimalista cuando la clave es visible
+      eyeIcon.innerHTML = `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>`;
+    } else {
+      passInput.type = 'password';
+      // Icono de ojo limpio abierto
+      eyeIcon.innerHTML = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>`;
+    }
+  }
+
+  function saveDb() {
+    localStorage.setItem('sicarp_db_v3', JSON.stringify(db));
+  }
+
+  // MANEJO DE SESIÓN
+  function handleLogin(e) {
+    e.preventDefault();
+    const userVal = document.getElementById('loginUser').value.trim();
+    const passVal = document.getElementById('loginPass').value.trim();
+    
+    const user = db.users.find(u => u.username.toLowerCase() === userVal.toLowerCase() && u.pass === passVal);
+    
+    if (user) {
+      currentUser = user;
+      document.getElementById('loginError').classList.add('hidden');
+      document.getElementById('viewLogin').classList.add('hidden');
+      document.getElementById('appHeader').classList.remove('hidden');
+      document.getElementById('mainContainer').classList.remove('hidden');
+      
+      document.getElementById('navUsername').innerText = `${user.username} (${user.role.toUpperCase()})`;
+      
+      if (user.role === 'admin') {
+        document.getElementById('btnNavUsers').classList.remove('hidden');
+        document.getElementById('btnNewProgram').classList.remove('hidden');
+      } else {
+        document.getElementById('btnNavUsers').classList.add('hidden');
+        if (user.role === 'conduccion') {
+          document.getElementById('btnNewProgram').classList.add('hidden');
+        } else {
+          document.getElementById('btnNewProgram').classList.remove('hidden');
+        }
+      }
+
+      navToPrograms();
+    } else {
+      document.getElementById('loginError').classList.remove('hidden');
+    }
+  }
+
+  function logout() {
+    currentUser = null;
+    activeProgramId = null;
+    activeRoutineId = null;
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginError').classList.add('hidden');
+    document.getElementById('appHeader').classList.add('hidden');
+    document.getElementById('mainContainer').classList.add('hidden');
+    document.getElementById('viewPrograms').classList.add('hidden');
+    document.getElementById('viewRoutinesList').classList.add('hidden');
+    document.getElementById('viewRoutineEditor').classList.add('hidden');
+    document.getElementById('viewLogin').classList.remove('hidden');
+  }
+
+  // NAVEGACIÓN
+  function navToPrograms() {
+    activeProgramId = null;
+    activeRoutineId = null;
+    document.getElementById('viewRoutinesList').classList.add('hidden');
+    document.getElementById('viewRoutineEditor').classList.add('hidden');
+    document.getElementById('viewPrograms').classList.remove('hidden');
+    renderProgramsGrid();
+  }
+
+  function navToRoutinesList(progId) {
+    activeProgramId = progId;
+    activeRoutineId = null;
+    document.getElementById('viewPrograms').classList.add('hidden');
+    document.getElementById('viewRoutineEditor').classList.add('hidden');
+    document.getElementById('viewRoutinesList').classList.remove('hidden');
+    
+    const prog = db.programs.find(p => p.id === progId);
+    document.getElementById('routineListProgTitle').innerText = prog.name;
+    document.getElementById('routineListProgSub').innerText = `${prog.channel} | Emisiones cargadas`;
+    
+    if (currentUser.role === 'conduccion') {
+      document.getElementById('btnNewRoutine').classList.add('hidden');
+    } else {
+      document.getElementById('btnNewRoutine').classList.remove('hidden');
+    }
+
+    renderRoutinesList();
+  }
+
+  function navToEditor(routineId) {
+    activeRoutineId = routineId;
+    document.getElementById('viewPrograms').classList.add('hidden');
+    document.getElementById('viewRoutinesList').classList.add('hidden');
+    document.getElementById('viewRoutineEditor').classList.remove('hidden');
+    
+    const r = db.routines.find(item => item.id === routineId);
+    
+    document.getElementById('progChannel').value = r.channel || '';
+    document.getElementById('progName').value = r.name || '';
+    document.getElementById('progNumber').value = r.pgmNum || '001';
+    document.getElementById('progDate').value = r.date || '';
+    document.getElementById('progHosts').value = r.hosts || '';
+    document.getElementById('progProducers').value = r.producers || '';
+
+    const editorContainer = document.getElementById('viewRoutineEditor');
+    if (currentUser.role === 'conduccion') {
+      editorContainer.classList.add('live-mode');
+      document.getElementById('editorMetaGrid').querySelectorAll('input').forEach(i => i.disabled = true);
+    } else {
+      editorContainer.classList.remove('live-mode');
+      document.getElementById('editorMetaGrid').querySelectorAll('input').forEach(i => i.disabled = false);
+    }
+
+    renderEditorTable();
+  }
+
+  // RENDERS
+  function renderProgramsGrid() {
+    const grid = document.getElementById('programsGrid');
+    grid.innerHTML = '';
+
+    let allowedProgs = [];
+    if (currentUser.role === 'admin') {
+      allowedProgs = db.programs;
+    } else {
+      const assigned = currentUser.assignedPrograms || [];
+      allowedProgs = db.programs.filter(p => assigned.includes(p.id));
+    }
+
+    if (allowedProgs.length === 0) {
+      grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-color);">
+        No tenés programas asignados o disponibles para mostrar.
+      </div>`;
+      return;
+    }
+
+    allowedProgs.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'card-program';
+      
+      const daysText = formatDaysText(p.daysList);
+      const timeText = (p.timeStart && p.timeEnd) ? `${p.timeStart} a ${p.timeEnd} hs` : 'Sin horario';
+
+      card.innerHTML = `
+        <div class="card-header">
+          <div>
+            <div class="card-title">${p.name}</div>
+            <div class="card-channel">${p.channel}</div>
+          </div>
+          ${p.logo ? `<img src="${p.logo}" class="card-logo">` : ''}
+        </div>
+        <div class="card-meta">
+          <div>🗓️ <strong>Días:</strong> ${daysText}</div>
+          <div>⏰ <strong>Horario:</strong> ${timeText}</div>
+          <div>🎬 <strong>1ª Emisión:</strong> ${p.firstDate || '-'}</div>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-sm" onclick="navToRoutinesList('${p.id}')">Ver Rutinas →</button>
+          ${currentUser.role !== 'conduccion' ? `
+            <div style="display:flex; gap:4px;">
+              <button class="btn btn-secondary btn-sm" title="Duplicar" onclick="duplicateProgram('${p.id}')">📋</button>
+              <button class="btn btn-secondary btn-sm" title="Editar" onclick="openProgramModal('${p.id}')">✏️</button>
+              <button class="btn btn-danger btn-sm" title="Eliminar" onclick="deleteProgram('${p.id}')">✕</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  function renderRoutinesList() {
+    const tbody = document.getElementById('routinesListBody');
+    tbody.innerHTML = '';
+    
+    const progtines = db.routines.filter(r => r.programId === activeProgramId);
+    
+    if (progtines.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:20px;">No hay rutinas creadas para este programa aún.</td></tr>`;
+      return;
+    }
+
+    progtines.forEach(r => {
+      const tr = document.createElement('tr');
+      
+      let durTotal = '00:00';
+      let secSecs = 0;
+      (r.routine || []).forEach(item => {
+        const parts = item.duration.split(':');
+        secSecs += (parseInt(parts[0])||0)*60 + (parseInt(parts[1])||0);
+      });
+      durTotal = formatSeconds(secSecs);
+
+      const dayName = getDayNameFromDate(r.date);
+
+      tr.innerHTML = `
+        <td style="text-align:center;"><input type="checkbox" class="routine-select-cb" value="${r.id}"></td>
+        <td style="text-align:center; font-weight:700; color:#60a5fa;">PGM-${r.pgmNum}</td>
+        <td><strong>${r.date}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(${dayName})</span></td>
+        <td style="font-family:monospace; font-weight:700;">${durTotal}</td>
+        <td>${r.hosts || '-'}</td>
+        <td>${r.producers || '-'}</td>
+        <td style="text-align:center;">
+          <div style="display:flex; gap:4px; justify-content:center;">
+            <button class="btn btn-sm" onclick="navToEditor('${r.id}')">${currentUser.role==='conduccion'?'📺 Ver':'✏️ Editar'}</button>
+            ${currentUser.role !== 'conduccion' ? `<button class="btn btn-danger btn-sm" onclick="deleteRoutine('${r.id}')">✕</button>` : ''}
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // PROGRAMAS ACTIONS
+  function openProgramModal(editId = null) {
+    const modal = document.getElementById('modalProgram');
+    document.getElementById('progFormId').value = editId || '';
+    document.getElementById('modalProgTitle').innerText = editId ? 'Editar Programa' : 'Nuevo Programa';
+    
+    document.getElementById('progFormName').value = '';
+    document.getElementById('progFormChannel').value = '';
+    document.getElementById('progFormHosts').value = '';
+    document.getElementById('progFormProducers').value = '';
+    document.getElementById('progFormFirstDate').value = '';
+    document.getElementById('progFormTimeStart').value = '';
+    document.getElementById('progFormTimeEnd').value = '';
+    document.getElementById('progFormLogoPreviewContainer').style.display = 'none';
+    document.getElementById('progFormLogoInput').value = '';
+    tempProgramLogo = '';
+
+    document.querySelectorAll('#daysPicker .day-pill').forEach(p => p.classList.remove('selected'));
+
+    if (editId) {
+      const p = db.programs.find(item => item.id === editId);
+      if (p) {
+        document.getElementById('progFormName').value = p.name || '';
+        document.getElementById('progFormChannel').value = p.channel || '';
+        document.getElementById('progFormHosts').value = p.defaultHosts || '';
+        document.getElementById('progFormProducers').value = p.defaultProducers || '';
+        document.getElementById('progFormFirstDate').value = p.firstDate || '';
+        document.getElementById('progFormTimeStart').value = p.timeStart || '';
+        document.getElementById('progFormTimeEnd').value = p.timeEnd || '';
+        tempProgramLogo = p.logo || '';
+        if (tempProgramLogo) {
+          document.getElementById('progFormLogoPreview').src = tempProgramLogo;
+          document.getElementById('progFormLogoPreviewContainer').style.display = 'flex';
+        }
+        if (p.daysList) {
+          p.daysList.forEach(d => {
+            const pill = document.querySelector(`#daysPicker .day-pill[data-day="${d}"]`);
+            if (pill) pill.classList.add('selected');
+          });
+        }
+      }
+    }
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  }
+
+  function handleProgramLogoUpload(e) {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        tempProgramLogo = evt.target.result;
+        document.getElementById('progFormLogoPreview').src = tempProgramLogo;
+        document.getElementById('progFormLogoPreviewContainer').style.display = 'flex';
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function removeProgramLogo() {
+    tempProgramLogo = '';
+    document.getElementById('progFormLogoInput').value = '';
+    document.getElementById('progFormLogoPreviewContainer').style.display = 'none';
+  }
+
+  function toggleDayPill(el) {
+    const dayVal = parseInt(el.getAttribute('data-day'));
+    if (dayVal === -1) {
+      document.querySelectorAll('#daysPicker .day-pill').forEach(p => p.classList.remove('selected'));
+      el.classList.add('selected');
+    } else {
+      const undefinedPill = document.querySelector('#daysPicker .day-pill[data-day="-1"]');
+      if (undefinedPill) undefinedPill.classList.remove('selected');
+      el.classList.toggle('selected');
+    }
+  }
+
+  function handleSaveProgram(e) {
+    e.preventDefault();
+    const editId = document.getElementById('progFormId').value;
+    
+    const selectedDays = [];
+    document.querySelectorAll('#daysPicker .day-pill.selected').forEach(p => {
+      selectedDays.push(parseInt(p.getAttribute('data-day')));
+    });
+
+    const progData = {
+      id: editId || 'p_' + Date.now(),
+      name: document.getElementById('progFormName').value,
+      channel: document.getElementById('progFormChannel').value,
+      logo: tempProgramLogo,
+      defaultHosts: document.getElementById('progFormHosts').value,
+      defaultProducers: document.getElementById('progFormProducers').value,
+      firstDate: document.getElementById('progFormFirstDate').value,
+      timeStart: document.getElementById('progFormTimeStart').value,
+      timeEnd: document.getElementById('progFormTimeEnd').value,
+      daysList: selectedDays
+    };
+
+    if (editId) {
+      const idx = db.programs.findIndex(p => p.id === editId);
+      db.programs[idx] = progData;
+    } else {
+      db.programs.push(progData);
+    }
+
+    saveDb();
+    closeModal('modalProgram');
+    renderProgramsGrid();
+  }
+
+  function duplicateProgram(progId) {
+    const p = db.programs.find(item => item.id === progId);
+    if (p) {
+      const newP = JSON.parse(JSON.stringify(p));
+      newP.id = 'p_' + Date.now();
+      newP.name = `${p.name} (Copia)`;
+      db.programs.push(newP);
+      saveDb();
+      renderProgramsGrid();
+    }
+  }
+
+  function deleteProgram(progId) {
+    if (confirm('¿Seguro que querés eliminar este programa y todas sus rutinas?')) {
+      db.programs = db.programs.filter(p => p.id !== progId);
+      db.routines = db.routines.filter(r => r.programId !== progId);
+      saveDb();
+      renderProgramsGrid();
+    }
+  }
+
+  // CREAR RUTINA NUEVA AUTOMÁTICA Y LÓGICA DE PGM N°
+  function openNewRoutineDialog() {
+    document.getElementById('modalNewRoutine').classList.remove('hidden');
+    document.getElementById('modalNewRoutine').style.display = 'flex';
+  }
+
+  function createNewRoutine(duplicateLast) {
+    closeModal('modalNewRoutine');
+    const prog = db.programs.find(p => p.id === activeProgramId);
+    const existingRoutines = db.routines.filter(r => r.programId === activeProgramId);
+    
+    let baseStructure = [
+      { type: 'sec', duration: '05:00', style: 'APERTURA', styleCustom: '', title: 'Apertura', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' }
+    ];
+
+    let lastRoutine = null;
+    if (existingRoutines.length > 0) {
+      lastRoutine = existingRoutines[existingRoutines.length - 1];
+      if (duplicateLast && lastRoutine.routine) {
+        baseStructure = JSON.parse(JSON.stringify(lastRoutine.routine));
+      }
+    }
+
+    // Calcular Fecha Sugerida y PGM N° consecutivo
+    let nextDateStr = getTodayFormatted();
+    if (lastRoutine && lastRoutine.date) {
+      nextDateStr = getNextEmisionDate(lastRoutine.date, prog.daysList);
+    } else if (prog.firstDate) {
+      nextDateStr = prog.firstDate;
+    }
+
+    const calculatedPgmNum = calculatePgmNumForDate(prog, nextDateStr);
+
+    const newRoutine = {
+      id: 'r_' + Date.now(),
+      programId: activeProgramId,
+      pgmNum: calculatedPgmNum,
+      date: nextDateStr,
+      channel: prog.channel,
+      name: prog.name,
+      hosts: prog.defaultHosts,
+      producers: prog.defaultProducers,
+      routine: baseStructure
+    };
+
+    db.routines.push(newRoutine);
+    saveDb();
+    navToEditor(newRoutine.id);
+  }
+
+  function deleteRoutine(routineId) {
+    if (confirm('¿Eliminar esta rutina?')) {
+      db.routines = db.routines.filter(r => r.id !== routineId);
+      saveDb();
+      renderRoutinesList();
+    }
+  }
+
+  // EDITOR TABLA RUTINA
+  function renderEditorTable() {
+    const tbody = document.getElementById('routineBody');
+    tbody.innerHTML = '';
+    
+    const r = db.routines.find(item => item.id === activeRoutineId);
+    if (!r) return;
+    const routineData = r.routine || [];
+
+    let secCount = 1;
+    let tandaCount = 1;
+
+    let blockGroups = [];
+    let currentBlockNum = 1;
+    let currentBlockItemsCount = 0;
+
+    routineData.forEach((item) => {
+      if (item.type === 'tanda') {
+        if (currentBlockItemsCount > 0) {
+          blockGroups.push({ isBlock: true, blockNum: currentBlockNum++, count: currentBlockItemsCount });
+          currentBlockItemsCount = 0;
+        }
+        blockGroups.push({ isBlock: false, count: 1 });
+      } else {
+        currentBlockItemsCount++;
+      }
+    });
+
+    if (currentBlockItemsCount > 0) {
+      blockGroups.push({ isBlock: true, blockNum: currentBlockNum, count: currentBlockItemsCount });
+    }
+
+    let groupPointer = 0;
+    let rowInGroupCounter = 0;
+
+    routineData.forEach((item, index) => {
+      const tr = document.createElement('tr');
+      if (item.type === 'tanda') tr.classList.add('is-tanda');
+
+      let html = `<td class="drag-handle no-print" draggable="true" ondragstart="handleDragStart(event, ${index})" ondragover="event.preventDefault()" ondrop="handleDrop(event, ${index})">☰</td>`;
+      html += `<td class="sec-cell">${index + 1}</td>`;
+
+      if (item.type === 'tanda') {
+        const tandaTitle = `TANDA COMERCIAL N°${tandaCount++}`;
+        item.title = tandaTitle;
+
+        html += `<td class="block-cell" style="color:#ef4444; font-size:0.85rem;">TANDA</td>`;
+        html += `<td><input type="text" class="duration-input" value="${item.duration}" onfocus="this.select()" oninput="handleDurationInput(this, ${index})"></td>`;
+        html += `<td colspan="4"><input type="text" style="font-weight:bold; color:#f87171;" value="${tandaTitle}" disabled></td>`;
+
+        groupPointer++;
+        rowInGroupCounter = 0;
+      } else {
+        if (rowInGroupCounter === 0) {
+          const group = blockGroups[groupPointer];
+          html += `<td class="block-cell" rowspan="${group.count}">B${group.blockNum}</td>`;
+        }
+
+        secCount++;
+        html += `<td><input type="text" class="duration-input" value="${item.duration}" onfocus="this.select()" oninput="handleDurationInput(this, ${index})"></td>`;
+
+        html += `<td>
+          <select onchange="updateRowData(${index}, 'style', this.value)">
+            <option ${item.style==='APERTURA'?'selected':''}>APERTURA</option>
+            <option ${item.style==='COLUMNA'?'selected':''}>COLUMNA</option>
+            <option ${item.style==='DEBATE'?'selected':''}>DEBATE</option>
+            <option ${item.style==='ENTREVISTA'?'selected':''}>ENTREVISTA</option>
+            <option ${item.style==='INFORME'?'selected':''}>INFORME</option>
+            <option ${item.style==='MOVIL'?'selected':''}>MOVIL</option>
+            <option ${item.style==='CIERRE'?'selected':''}>CIERRE</option>
+            <option ${item.style==='OTRO'?'selected':''}>OTRO</option>
+          </select>
+          ${item.style === 'OTRO' ? `<input type="text" class="custom-input" placeholder="Escribir..." value="${item.styleCustom || ''}" onfocus="this.select()" oninput="updateRowData(${index}, 'styleCustom', this.value)">` : ''}
+        </td>`;
+
+        html += `<td><input type="text" value="${item.title}" onfocus="this.select()" oninput="updateRowData(${index}, 'title', this.value)"></td>`;
+        html += `<td><input type="text" value="${item.detail}" onfocus="this.select()" oninput="updateRowData(${index}, 'detail', this.value)"></td>`;
+
+        html += `<td>
+          <div class="av-container">
+            <select onchange="updateRowData(${index}, 'av', this.value)">
+              <option ${item.av==='NINGUNO'?'selected':''}>NINGUNO</option>
+              <option ${item.av==='APOYO'?'selected':''}>APOYO</option>
+              <option ${item.av==='TOTAL'?'selected':''}>TOTAL</option>
+              <option ${item.av==='INFORME'?'selected':''}>INFORME</option>
+              <option ${item.av==='OTRO'?'selected':''}>OTRO</option>
+            </select>
+            ${item.av === 'OTRO' ? `<input type="text" class="custom-input" placeholder="Escribir..." value="${item.avCustom || ''}" onfocus="this.select()" oninput="updateRowData(${index}, 'avCustom', this.value)">` : ''}
+            <input type="text" placeholder="N° Archivo" value="${item.avNum || ''}" onfocus="this.select()" oninput="updateRowData(${index}, 'avNum', this.value)">
+          </div>
+        </td>`;
+
+        rowInGroupCounter++;
+        if (rowInGroupCounter >= blockGroups[groupPointer].count) {
+          rowInGroupCounter = 0;
+          groupPointer++;
+        }
+      }
+
+      html += `<td class="no-print" style="text-align:center;">
+        <button class="btn btn-danger btn-action" onclick="deleteEditorRow(${index})">✕</button>
+      </td>`;
+
+      tr.innerHTML = html;
+      tbody.appendChild(tr);
+    });
+
+    const totalBlocksCount = blockGroups.filter(g => g.isBlock).length;
+    updateEditorStats(totalBlocksCount, secCount - 1);
+  }
+
+  function handleDurationInput(input, index) {
+    let digits = input.value.replace(/\D/g, '');
+    if (digits.length > 4) digits = digits.slice(-4);
+
+    let formatted = '';
+    if (digits.length <= 2) {
+      formatted = `00:${digits.padStart(2, '0')}`;
+    } else if (digits.length === 3) {
+      formatted = `0${digits[0]}:${digits.slice(1)}`;
+    } else {
+      formatted = `${digits.slice(0, 2)}:${digits.slice(2)}`;
+    }
+
+    input.value = formatted;
+    const r = db.routines.find(item => item.id === activeRoutineId);
+    if (r && r.routine[index]) {
+      r.routine[index].duration = formatted;
+      saveDb();
+      updateEditorStatsOnly();
+    }
+  }
+
+  function handleTimeInput(input) {
+    let digits = input.value.replace(/\D/g, '');
+    if (digits.length > 4) digits = digits.slice(-4);
+
+    let formatted = '';
+    if (digits.length <= 2) {
+      formatted = digits;
+    } else if (digits.length === 3) {
+      formatted = `0${digits[0]}:${digits.slice(1)}`;
+    } else {
+      formatted = `${digits.slice(0, 2)}:${digits.slice(2)}`;
+    }
+
+    input.value = formatted;
+  }
+
+  function updateEditorStatsOnly() {
+    const r = db.routines.find(item => item.id === activeRoutineId);
+    if (!r) return;
+    
+    let secCount = 0;
+    let blockCount = 0;
+    let inBlock = false;
+
+    (r.routine || []).forEach((item) => {
+      if (item.type !== 'tanda') {
+        secCount++;
+        if (!inBlock) {
+          blockCount++;
+          inBlock = true;
+        }
+      } else {
+        inBlock = false;
+      }
+    });
+
+    updateEditorStats(blockCount, secCount);
+  }
+
+  function updateRowData(index, field, val) {
+    const r = db.routines.find(item => item.id === activeRoutineId);
+    r.routine[index][field] = val;
+    saveDb();
+    if (field === 'style' || field === 'av') renderEditorTable();
+  }
+
+  function addRow(type) {
+    const r = db.routines.find(item => item.id === activeRoutineId);
+    if (type === 'tanda') {
+      r.routine.push({ type: 'tanda', duration: '05:00', style: 'TANDA', title: 'TANDA COMERCIAL', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' });
+    } else {
+      r.routine.push({ type: 'sec', duration: '05:00', style: 'APERTURA', styleCustom: '', title: 'Nueva Sección', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' });
+    }
+    saveDb();
+    renderEditorTable();
+  }
+
+  function deleteEditorRow(index) {
+    const r = db.routines.find(item => item.id === activeRoutineId);
+    r.routine.splice(index, 1);
+    saveDb();
+    renderEditorTable();
+  }
+
+  function handleDragStart(e, index) { e.dataTransfer.setData('text/plain', index); }
+  function handleDrop(e, targetIndex) {
+    e.preventDefault();
+    const sourceIndex = e.dataTransfer.getData('text/plain');
+    if (sourceIndex === "") return;
+    const r = db.routines.find(item => item.id === activeRoutineId);
+    const item = r.routine.splice(sourceIndex, 1)[0];
+    r.routine.splice(targetIndex, 0, item);
+    saveDb();
+    renderEditorTable();
+  }
+
+  function saveCurrentRoutineMeta() {
+    const r = db.routines.find(item => item.id === activeRoutineId);
+    if (r) {
+      r.channel = document.getElementById('progChannel').value;
+      r.name = document.getElementById('progName').value;
+      r.pgmNum = document.getElementById('progNumber').value;
+      r.date = document.getElementById('progDate').value;
+      r.hosts = document.getElementById('progHosts').value;
+      r.producers = document.getElementById('progProducers').value;
+      saveDb();
+    }
+  }
+
+  function handleEditorDateInput(input) {
+    let val = input.value.replace(/\D/g, '');
+    if (val.length === 4) {
+      val = `${val.slice(0,2)}/${val.slice(2,4)}/2026`;
+      input.value = val;
+    } else if (val.length === 8) {
+      val = `${val.slice(0,2)}/${val.slice(2,4)}/${val.slice(4,8)}`;
+      input.value = val;
+    }
+    
+    saveCurrentRoutineMeta();
+
+    const r = db.routines.find(item => item.id === activeRoutineId);
+    const prog = db.programs.find(p => p.id === r.programId);
+    if (prog && val.length >= 8) {
+      const calculatedPgm = calculatePgmNumForDate(prog, val);
+      document.getElementById('progNumber').value = calculatedPgm;
+      r.pgmNum = calculatedPgm;
+      saveDb();
+    }
+  }
+
+  function resetRoutineData() {
+    if (confirm('¿Vaciar todas las filas de esta rutina?')) {
+      const r = db.routines.find(item => item.id === activeRoutineId);
+      r.routine = [];
+      saveDb();
+      renderEditorTable();
+    }
+  }
+
+  function updateEditorStats(totalBlocks, totalSecs) {
+    const r = db.routines.find(item => item.id === activeRoutineId);
+    let tandasCount = 0;
+    let totalSecsNoTanda = 0;
+    let totalSecsWithTanda = 0;
+
+    (r.routine || []).forEach(item => {
+      if (item.type === 'tanda') tandasCount++;
+      const parts = item.duration.split(':');
+      const m = parseInt(parts[0]) || 0;
+      const s = parseInt(parts[1]) || 0;
+      const durationInSeconds = (m * 60) + s;
+
+      totalSecsWithTanda += durationInSeconds;
+      if (item.type !== 'tanda') totalSecsNoTanda += durationInSeconds;
+    });
+
+    document.getElementById('statSecs').innerText = totalSecs;
+    document.getElementById('statTandas').innerText = tandasCount;
+    document.getElementById('statBlocks').innerText = totalBlocks;
+    document.getElementById('statDurNoTanda').innerText = formatSeconds(totalSecsNoTanda);
+    document.getElementById('statDurTotal').innerText = formatSeconds(totalSecsWithTanda);
+  }
+
+  // CÁLCULOS FECHAS Y DÍAS HÁBILES
+  function handleFirstDateInput(input) {
+    let val = input.value.replace(/\D/g, '');
+    if (val.length === 4) {
+      input.value = `${val.slice(0,2)}/${val.slice(2,4)}/2026`;
+    } else if (val.length === 8) {
+      input.value = `${val.slice(0,2)}/${val.slice(2,4)}/${val.slice(4,8)}`;
+    }
+  }
+
+  function getTodayFormatted() {
+    const now = new Date();
+    const d = String(now.getDate()).padStart(2,'0');
+    const m = String(now.getMonth()+1).padStart(2,'0');
+    return `${d}/${m}/${now.getFullYear()}`;
+  }
+
+  function getDayNameFromDate(dateStr) {
+    if (!dateStr || dateStr.length < 8) return '';
+    const parts = dateStr.split('/');
+    const d = new Date(parts[2], parts[1]-1, parts[0]);
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    return days[d.getDay()] || '';
+  }
+
+  function calculatePgmNumForDate(prog, dateStr) {
+    if (!prog.firstDate || !dateStr) return '001';
+    
+    const p1 = prog.firstDate.split('/');
+    const d1 = new Date(p1[2], p1[1]-1, p1[0]);
+    
+    const p2 = dateStr.split('/');
+    const d2 = new Date(p2[2], p2[1]-1, p2[0]);
+
+    if (d2 < d1) return '001';
+
+    let count = 0;
+    let current = new Date(d1);
+    
+    const daysList = prog.daysList || [];
+
+    while (current <= d2) {
+      const dayOfWeek = current.getDay();
+      if (daysList.length === 0 || daysList.includes(-1) || daysList.includes(dayOfWeek)) {
+        count++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+
+    return String(Math.max(1, count)).padStart(3, '0');
+  }
+
+  function getNextEmisionDate(lastDateStr, daysList) {
+    const parts = lastDateStr.split('/');
+    let current = new Date(parts[2], parts[1]-1, parts[0]);
+    current.setDate(current.getDate() + 1);
+
+    if (!daysList || daysList.length === 0 || daysList.includes(-1)) {
+      const d = String(current.getDate()).padStart(2,'0');
+      const m = String(current.getMonth()+1).padStart(2,'0');
+      return `${d}/${m}/${current.getFullYear()}`;
+    }
+
+    while (!daysList.includes(current.getDay())) {
+      current.setDate(current.getDate() + 1);
+    }
+
+    const d = String(current.getDate()).padStart(2,'0');
+    const m = String(current.getMonth()+1).padStart(2,'0');
+    return `${d}/${m}/${current.getFullYear()}`;
+  }
+
+  function formatDaysText(list) {
+    if (!list || list.length === 0 || list.includes(-1)) return 'Sin definir';
+    const names = { 1:'L', 2:'M', 3:'X', 4:'J', 5:'V', 6:'S', 0:'D' };
+    return list.map(d => names[d]).join(', ');
+  }
+
+  function formatSeconds(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+
+  // EXPORTACIÓN A PDF (INDIVIDUAL Y COMPILADO BATCH)
+  function downloadPDF() {
+    const r = db.routines.find(item => item.id === activeRoutineId);
+    const prog = db.programs.find(p => p.id === r.programId);
+
+    buildPdfDom(r, prog);
+
+    const template = document.getElementById('pdfTemplate');
+    template.style.display = 'block';
+
+    const cleanDate = r.date.replace(/\//g, '-');
+    const filename = `${r.name} - ${cleanDate} - RUTINA PGM N° ${r.pgmNum || '001'}.pdf`;
+
+    const opt = {
+      margin:       [10, 10, 10, 10],
+      filename:     filename,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(template).save().then(() => {
+      template.style.display = 'none';
+    });
+  }
+
+  function toggleSelectAllRoutines(masterCb) {
+    document.querySelectorAll('.routine-select-cb').forEach(cb => cb.checked = masterCb.checked);
+  }
+
+  function exportBatchPDF() {
+    const selectedIds = [];
+    document.querySelectorAll('.routine-select-cb:checked').forEach(cb => selectedIds.push(cb.value));
+
+    if (selectedIds.length === 0) {
+      alert('Por favor seleccioná al menos una rutina con el casillero de verificación.');
+      return;
+    }
+
+    const prog = db.programs.find(p => p.id === activeProgramId);
+    const container = document.createElement('div');
+    container.id = 'batchPdfContainer';
+    container.style.background = '#ffffff';
+    container.style.color = '#000000';
+
+    selectedIds.forEach((rid, index) => {
+      const r = db.routines.find(item => item.id === rid);
+      const pageWrapper = document.createElement('div');
+      pageWrapper.style.padding = '20px';
+      if (index > 0) pageWrapper.style.pageBreakBefore = 'always';
+
+      buildPdfDomIntoElement(r, prog, pageWrapper);
+      container.appendChild(pageWrapper);
+    });
+
+    document.body.appendChild(container);
+
+    const now = new Date();
+    const timeStr = `${now.toLocaleDateString().replace(/\//g,'-')} ~ ${now.getHours()}-${now.getMinutes()}`;
+    const filename = `${prog.name} - SELECCION DE RUTINAS - ${timeStr}.pdf`;
+
+    const opt = {
+      margin:       [10, 10, 10, 10],
+      filename:     filename,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(container).save().then(() => {
+      container.remove();
+    });
+  }
+
+  function buildPdfDom(r, prog) {
+    const parent = document.getElementById('pdfTemplate');
+    parent.innerHTML = '';
+    buildPdfDomIntoElement(r, prog, parent);
+  }
+
+  function buildPdfDomIntoElement(r, prog, parentEl) {
+    const dayName = getDayNameFromDate(r.date).toUpperCase();
+    const timeText = (prog && prog.timeStart) ? `${prog.timeStart}-${prog.timeEnd} HS` : '';
+    
+    let secSecsNoTanda = 0;
+    let secSecsTotal = 0;
+    let tandasCount = 0;
+    let secCount = 0;
+
+    (r.routine || []).forEach(item => {
+      if (item.type === 'tanda') tandasCount++;
+      else secCount++;
+
+      const parts = item.duration.split(':');
+      const s = (parseInt(parts[0])||0)*60 + (parseInt(parts[1])||0);
+      secSecsTotal += s;
+      if (item.type !== 'tanda') secSecsNoTanda += s;
+    });
+
+    const now = new Date();
+    const timeFormatted = `${now.toLocaleDateString()} A LAS ${now.toLocaleTimeString()} HS`;
+
+    parentEl.innerHTML = `
+      <div class="pdf-header">
+        <div class="pdf-title-block">
+          <h1>${(r.name || 'PROGRAMA').toUpperCase()}</h1>
+          <h2>${(r.channel || 'CANAL').toUpperCase()}</h2>
+          <p>RUTINA PGM-${r.pgmNum || '001'} (${dayName} ${timeText})</p>
+        </div>
+        ${prog && prog.logo ? `<img src="${prog.logo}" class="pdf-logo">` : ''}
+      </div>
+
+      <table class="pdf-meta-table">
+        <tr>
+          <td><span class="pdf-meta-label">FECHA:</span> <span class="pdf-meta-val">${r.date || '-'}</span></td>
+          <td><span class="pdf-meta-label">CONDUCCIÓN:</span> <span class="pdf-meta-val">${r.hosts || '-'}</span></td>
+          <td><span class="pdf-meta-label">PRODUCCIÓN:</span> <span class="pdf-meta-val">${r.producers || '-'}</span></td>
+        </tr>
+        <tr>
+          <td colspan="3" style="padding:0;">
+            <table style="width:100%; border-collapse:collapse;">
+              <tr>
+                <td class="pdf-meta-subtd" style="width:20%; border-right:1px solid #cbd5e1;"><span class="pdf-meta-label">BLOQUES:</span> <span class="pdf-meta-val">${calculateTotalBlocks(r.routine)}</span></td>
+                <td class="pdf-meta-subtd" style="width:20%; border-right:1px solid #cbd5e1;"><span class="pdf-meta-label">TANDAS:</span> <span class="pdf-meta-val">${tandasCount}</span></td>
+                <td class="pdf-meta-subtd" style="width:20%; border-right:1px solid #cbd5e1;"><span class="pdf-meta-label">SECCIONES:</span> <span class="pdf-meta-val">${secCount}</span></td>
+                <td class="pdf-meta-subtd" style="width:20%; border-right:1px solid #cbd5e1;"><span class="pdf-meta-label">DUR. SIN TANDAS:</span> <span class="pdf-meta-val">${formatSeconds(secSecsNoTanda)}</span></td>
+                <td class="pdf-meta-subtd" style="width:20%;"><span class="pdf-meta-label">DUR. TOTAL:</span> <span class="pdf-meta-val">${formatSeconds(secSecsTotal)}</span></td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      <table class="pdf-table">
+        <thead>
+          <tr>
+            <th style="width: 45px; text-align: center;">BLOQUE</th>
+            <th style="width: 30px; text-align: center;">N°</th>
+            <th>TÍTULO / ESTILO</th>
+            <th>DETALLE / NOTAS DE PISO</th>
+            <th style="width: 120px;">APOYO AV / N°</th>
+            <th style="width: 60px; text-align: center;">TIEMPO</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${generatePdfRowsHtml(r.routine)}
+        </tbody>
+      </table>
+
+      <div class="pdf-footer">
+        RUTINA DE PROGRAMA – ${(r.name || '').toUpperCase()} – ${(r.channel || '').toUpperCase()} – PGM N°${r.pgmNum || '001'} – IMPRESO EL ${timeFormatted}
+      </div>
+    `;
+  }
+
+  function calculateTotalBlocks(routineData) {
+    let blockCount = 0;
+    let inBlock = false;
+    (routineData || []).forEach(item => {
+      if (item.type !== 'tanda') {
+        if (!inBlock) { blockCount++; inBlock = true; }
+      } else {
+        inBlock = false;
+      }
+    });
+    return blockCount;
+  }
+
+  function generatePdfRowsHtml(routineData) {
+    let secPdfCounter = 1;
+    let tandaPdfIndex = 1;
+
+    let blockGroups = [];
+    let currentBlockNum = 1;
+    let currentBlockItemsCount = 0;
+
+    (routineData || []).forEach((item) => {
+      if (item.type === 'tanda') {
+        if (currentBlockItemsCount > 0) {
+          blockGroups.push({ isBlock: true, blockNum: currentBlockNum++, count: currentBlockItemsCount });
+          currentBlockItemsCount = 0;
+        }
+        blockGroups.push({ isBlock: false, count: 1 });
+      } else {
+        currentBlockItemsCount++;
+      }
+    });
+
+    if (currentBlockItemsCount > 0) {
+      blockGroups.push({ isBlock: true, blockNum: currentBlockNum, count: currentBlockItemsCount });
+    }
+
+    let groupPointer = 0;
+    let rowInGroupCounter = 0;
+    let htmlStr = '';
+
+    (routineData || []).forEach((item) => {
+      const isTanda = item.type === 'tanda';
+      htmlStr += `<tr class="${isTanda ? 'pdf-tr-tanda' : ''}">`;
+
+      if (isTanda) {
+        const tandaTitle = `TANDA COMERCIAL N°${tandaPdfIndex++}`;
+        htmlStr += `<td class="pdf-block-tag" style="color:#991b1b; font-size:10px;">TANDA</td>`;
+        htmlStr += `<td colspan="4" class="pdf-tanda-title">${tandaTitle}</td>`;
+        htmlStr += `<td class="pdf-time-tag" style="color:#991b1b;">${item.duration}</td>`;
+
+        groupPointer++;
+        rowInGroupCounter = 0;
+      } else {
+        if (rowInGroupCounter === 0) {
+          const group = blockGroups[groupPointer];
+          htmlStr += `<td class="pdf-block-tag" rowspan="${group.count}">B${group.blockNum}</td>`;
+        }
+
+        let styleText = item.style === 'OTRO' ? item.styleCustom : item.style;
+        let avText = item.av === 'OTRO' ? item.avCustom : item.av;
+
+        htmlStr += `<td class="pdf-sec-tag">${secPdfCounter++}</td>`;
+        htmlStr += `<td>
+          <div class="pdf-title-main">${item.title}</div>
+          <div class="pdf-style-sub">${styleText || ''}</div>
+        </td>`;
+        htmlStr += `<td style="font-size:10px;">${item.detail || '-'}</td>`;
+        htmlStr += `<td>
+          <div class="pdf-av-main">${avText !== 'NINGUNO' ? avText : '-'}</div>
+          ${item.avNum ? `<div class="pdf-av-num">N°: ${item.avNum}</div>` : ''}
+        </td>`;
+        htmlStr += `<td class="pdf-time-tag">${item.duration}</td>`;
+
+        rowInGroupCounter++;
+        if (rowInGroupCounter >= blockGroups[groupPointer].count) {
+          rowInGroupCounter = 0;
+          groupPointer++;
+        }
+      }
+
+      htmlStr += `</tr>`;
+    });
+
+    return htmlStr;
+  }
+
+  // GESTIÓN DE USUARIOS
+  function openUsersModal() {
+    renderUsersList();
+    document.getElementById('modalUsers').classList.remove('hidden');
+    document.getElementById('modalUsers').style.display = 'flex';
+  }
+
+  function renderUsersList() {
+    const tbody = document.getElementById('usersListBody');
+    tbody.innerHTML = '';
+
+    const checksDiv = document.getElementById('userFormProgramsCheckboxes');
+    checksDiv.innerHTML = '';
+    db.programs.forEach(p => {
+      checksDiv.innerHTML += `<label style="font-size:0.8rem; display:inline-flex; align-items:center; gap:4px;">
+        <input type="checkbox" class="user-prog-cb" value="${p.id}"> ${p.name}
+      </label>`;
+    });
+
+    db.users.forEach(u => {
+      const tr = document.createElement('tr');
+      const progsCount = (u.assignedPrograms || []).length;
+      
+      tr.innerHTML = `
+        <td><strong>${u.username}</strong></td>
+        <td><span class="user-badge">${u.role.toUpperCase()}</span></td>
+        <td>${u.role==='admin' ? 'Todos' : (progsCount > 0 ? `${progsCount} Asignados` : 'Ninguno')}</td>
+        <td style="text-align:center;">
+          <div style="display:flex; gap:4px; justify-content:center;">
+            <button class="btn btn-secondary btn-sm" onclick="editUser('${u.id}')">✏️</button>
+            ${u.username !== 'admin' ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')">✕</button>` : ''}
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function editUser(userId) {
+    const u = db.users.find(item => item.id === userId);
+    if (u) {
+      document.getElementById('userFormId').value = u.id;
+      document.getElementById('userFormName').value = u.username;
+      document.getElementById('userFormPass').value = u.pass;
+      document.getElementById('userFormRole').value = u.role;
+
+      document.querySelectorAll('.user-prog-cb').forEach(cb => {
+        cb.checked = (u.assignedPrograms || []).includes(cb.value);
+      });
+    }
+  }
+
+  function handleSaveUser(e) {
+    e.preventDefault();
+    const editId = document.getElementById('userFormId').value;
+    
+    const assigned = [];
+    document.querySelectorAll('.user-prog-cb:checked').forEach(cb => assigned.push(cb.value));
+
+    const userData = {
+      id: editId || 'u_' + Date.now(),
+      username: document.getElementById('userFormName').value.trim(),
+      pass: document.getElementById('userFormPass').value.trim(),
+      role: document.getElementById('userFormRole').value,
+      assignedPrograms: assigned
+    };
+
+    if (editId) {
+      const idx = db.users.findIndex(u => u.id === editId);
+      db.users[idx] = userData;
+    } else {
+      db.users.push(userData);
+    }
+
+    saveDb();
+    document.getElementById('userFormId').value = '';
+    document.getElementById('userFormName').value = '';
+    document.getElementById('userFormPass').value = '';
+    renderUsersList();
+  }
+
+  function deleteUser(userId) {
+    if (confirm('¿Eliminar usuario?')) {
+      db.users = db.users.filter(u => u.id !== userId);
+      saveDb();
+      renderUsersList();
+    }
+  }
+
+  function closeModal(id) {
+    const modal = document.getElementById(id);
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
+</script>
+</body>
+</html>
