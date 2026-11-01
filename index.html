@@ -28,7 +28,6 @@
     .items-center { align-items: center; }
     .justify-between { justify-content: space-between; }
     
-    /* BUTTONS */
     .btn { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; font-size: 0.88rem; transition: background 0.2s; }
     .btn:hover { background: var(--accent-hover); }
     .btn-secondary { background: #334155; }
@@ -39,7 +38,6 @@
     .btn-success:hover { background: #15803d; }
     .btn-sm { padding: 4px 8px; font-size: 0.78rem; }
     
-    /* INPUTS & FORMS */
     input[type="text"], input[type="password"], select, textarea {
       background: #0f172a;
       border: 1px solid var(--border-color);
@@ -70,14 +68,12 @@
       border-radius: 6px;
       font-size: 0.85rem;
       outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
     }
     td input[type="text"]:focus, td select:focus {
       border-color: var(--accent);
       box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
     }
 
-    /* MAIN NAV & CONTAINER */
     .container { max-width: 1350px; margin: 0 auto; padding: 20px; }
     nav { background: #1e293b; border-bottom: 1px solid var(--border-color); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
     .nav-brand { font-weight: 800; font-size: 1.25rem; color: #fff; display: flex; align-items: center; gap: 8px; }
@@ -85,13 +81,11 @@
     .nav-user { display: flex; align-items: center; gap: 15px; font-size: 0.85rem; color: var(--text-muted); }
     .user-badge { background: #0f172a; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); color: #60a5fa; font-weight: 600; }
 
-    /* LOGIN SCREEN */
     .login-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%); }
     .login-card { background: var(--card-bg); border: 1px solid var(--border-color); width: 100%; max-width: 400px; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
     .login-title { font-size: 1.4rem; font-weight: 800; text-align: center; margin-bottom: 6px; }
     .login-subtitle { font-size: 0.8rem; text-align: center; color: var(--text-muted); margin-bottom: 24px; }
     
-    /* DASHBOARD / GRID PROGRAMAS */
     .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     .section-title { font-size: 1.3rem; font-weight: 700; }
     
@@ -105,7 +99,6 @@
     .card-meta { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px; display: flex; flex-direction: column; gap: 4px; }
     .card-actions { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 12px; }
 
-    /* RUTINA EDITOR STYLES */
     .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; }
     .stats-bar { display: flex; gap: 20px; background: #0f172a; padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; font-weight: 600; font-size: 0.85rem; flex-wrap: wrap; }
     .stat-item { display: flex; gap: 6px; }
@@ -113,7 +106,7 @@
     
     table.routine-table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); }
     table.routine-table th, table.routine-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); vertical-align: middle; }
-    table.routine-table th { background: #0f172a; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+    table.routine-table th { background: #0f172a; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; }
     
     tr.is-tanda { background: var(--tanda-bg) !important; }
     tr.is-tanda td { border-color: var(--tanda-border); }
@@ -125,29 +118,18 @@
     .av-container { display: flex; flex-direction: column; gap: 4px; }
     .custom-input { margin-top: 4px; }
 
-    /* MODAL */
     .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
     .modal-content { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 24px; width: 100%; max-width: 550px; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 
-    /* DAYS SELECTION PILLS */
     .days-picker { display: flex; gap: 6px; flex-wrap: wrap; }
     .day-pill { background: #0f172a; border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; user-select: none; }
     .day-pill.selected { background: var(--accent); border-color: var(--accent); color: white; }
 
-    /* MODOS VIVO CONDUCCION */
     .live-mode input, .live-mode select { pointer-events: none !important; opacity: 0.9; }
     .live-mode .no-print { display: none !important; }
 
-    /* ESTILOS DE DOCUMENTO PDF EXPORTABLE */
-    #pdfTemplate {
-      display: none;
-      background: #ffffff;
-      color: #000000;
-      padding: 30px;
-      font-family: 'Inter', sans-serif;
-    }
-
+    #pdfTemplate { display: none; background: #ffffff; color: #000000; padding: 30px; font-family: 'Inter', sans-serif; }
     .pdf-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 12px; }
     .pdf-title-block h1 { font-size: 22px; font-weight: 800; text-transform: uppercase; margin-bottom: 2px; color: #000; line-height: 1.1; }
     .pdf-title-block h2 { font-size: 12px; color: #475569; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
@@ -158,31 +140,25 @@
     .pdf-meta-table td { padding: 5px 8px; border: 1px solid #cbd5e1; }
     .pdf-meta-label { font-weight: 700; color: #475569; text-transform: uppercase; font-size: 9.5px; }
     .pdf-meta-val { font-weight: 700; color: #000; }
-    .pdf-meta-subtd { background: #f8fafc; font-size: 9.5px; text-align: center; }
 
     .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10.5px; background: #ffffff; }
-    .pdf-table th { background: #000000 !important; color: #ffffff !important; padding: 6px 8px; text-transform: uppercase; font-size: 9px; font-weight: 800; letter-spacing: 0.5px; border: 1px solid #000; text-align: left; }
+    .pdf-table th { background: #000000 !important; color: #ffffff !important; padding: 6px 8px; text-transform: uppercase; font-size: 9px; font-weight: 800; border: 1px solid #000; text-align: left; }
     .pdf-table td { padding: 7px 8px; border: 1px solid #cbd5e1; vertical-align: middle; color: #000; background: #ffffff; }
     
     .pdf-tr-tanda td { background: #fee2e2 !important; border-color: #fca5a5 !important; }
-    .pdf-tanda-title { font-weight: 800; color: #991b1b; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.5px; text-align: center; }
-    
+    .pdf-tanda-title { font-weight: 800; color: #991b1b; text-transform: uppercase; font-size: 10.5px; text-align: center; }
     .pdf-block-tag { font-weight: 800; font-size: 12px; color: #000000; text-align: center; vertical-align: middle; }
     .pdf-sec-tag { font-weight: 700; color: #475569; text-align: center; width: 30px; }
     .pdf-time-tag { font-weight: 700; font-family: monospace; font-size: 11px; text-align: center; width: 65px; }
-    
     .pdf-title-main { font-weight: 800; font-size: 11px; color: #000000; margin-bottom: 2px; }
     .pdf-style-sub { font-weight: 600; text-transform: uppercase; font-size: 9px; color: #64748b; }
-    
     .pdf-av-main { font-size: 10px; font-weight: 700; color: #1e293b; text-transform: uppercase; margin-bottom: 2px; }
     .pdf-av-num { font-size: 9px; color: #64748b; font-weight: 600; }
-
     .pdf-footer { border-top: 2px solid #000; padding-top: 8px; display: flex; justify-content: space-between; font-size: 8.5px; font-weight: 700; color: #334155; text-transform: uppercase; margin-top: 15px; }
   </style>
 </head>
 <body>
 
-<!-- PANTALLA DE INICIO DE SESIÓN -->
 <div id="viewLogin" class="login-wrapper">
   <div class="login-card">
     <div class="login-title">SiCARP-TV</div>
@@ -215,10 +191,9 @@
   </div>
 </div>
 
-<!-- NAVEGACIÓN Y CABECERA GLOBAL -->
 <nav id="appHeader" class="hidden">
   <div class="nav-brand">
-    SiCARP-TV <span>v4.0</span>
+    SiCARP-TV <span>v2.0</span>
   </div>
   <div class="nav-user">
     <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; background: #0f172a; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color);">
@@ -231,10 +206,7 @@
   </div>
 </nav>
 
-<!-- CONTENEDOR PRINCIPAL -->
 <div id="mainContainer" class="container hidden">
-
-  <!-- VISTA 1: PROGRAMAS DE TV -->
   <div id="viewPrograms">
     <div class="section-header">
       <div>
@@ -243,18 +215,13 @@
       </div>
       <button id="btnNewProgram" class="btn" onclick="openProgramModal()">➕ Crear Nuevo Programa</button>
     </div>
-
-    <div class="grid-programs" id="programsGrid">
-      <!-- Carga dinámica -->
-    </div>
+    <div class="grid-programs" id="programsGrid"></div>
   </div>
 
-  <!-- VISTA 2: LISTA DE RUTINAS DE UN PROGRAMA -->
   <div id="viewRoutinesList" class="hidden">
     <div style="margin-bottom: 15px;">
       <button class="btn btn-secondary btn-sm" onclick="navToPrograms()">← Volver a Programas</button>
     </div>
-
     <div class="section-header">
       <div>
         <div class="section-title" id="routineListProgTitle">Nombre Programa</div>
@@ -265,7 +232,6 @@
         <button id="btnNewRoutine" class="btn btn-success" onclick="openNewRoutineDialog()">➕ Crear Nueva Rutina</button>
       </div>
     </div>
-
     <table class="routine-table">
       <thead>
         <tr>
@@ -278,13 +244,10 @@
           <th style="width: 150px; text-align: center;">ACCIONES</th>
         </tr>
       </thead>
-      <tbody id="routinesListBody">
-        <!-- Carga dinámica -->
-      </tbody>
+      <tbody id="routinesListBody"></tbody>
     </table>
   </div>
 
-  <!-- VISTA 3: EDITOR DE RUTINA / ESCALETA DE TRANSMISION -->
   <div id="viewRoutineEditor" class="hidden">
     <div style="margin-bottom: 15px; display: flex; justify-content: space-between;">
       <button class="btn btn-secondary btn-sm" onclick="navToRoutinesList(activeProgramId)">← Volver a Rutinas del Programa</button>
@@ -293,44 +256,23 @@
       </div>
     </div>
 
-    <!-- Metadatos de la Rutina -->
     <div class="meta-grid" id="editorMetaGrid">
-      <div class="field">
-        <label>Canal / Medio</label>
-        <input type="text" id="progChannel" onfocus="this.select()" oninput="saveCurrentRoutineMeta()">
-      </div>
-      <div class="field">
-        <label>Nombre del Programa</label>
-        <input type="text" id="progName" onfocus="this.select()" oninput="saveCurrentRoutineMeta()">
-      </div>
-      <div class="field">
-        <label>PGM N°</label>
-        <input type="text" id="progNumber" onfocus="this.select()" oninput="saveCurrentRoutineMeta()">
-      </div>
-      <div class="field">
-        <label>Fecha de Emisión</label>
-        <input type="text" id="progDate" placeholder="DD/MM/AAAA" onfocus="this.select()" oninput="handleEditorDateInput(this)">
-      </div>
-      <div class="field">
-        <label>Conducción</label>
-        <input type="text" id="progHosts" onfocus="this.select()" oninput="saveCurrentRoutineMeta()">
-      </div>
-      <div class="field">
-        <label>Producción (Rutina / General)</label>
-        <input type="text" id="progProducers" onfocus="this.select()" oninput="saveCurrentRoutineMeta()">
-      </div>
+      <div class="field"><label>Canal / Medio</label><input type="text" id="progChannel" onfocus="this.select()" oninput="saveCurrentRoutineMeta()"></div>
+      <div class="field"><label>Nombre del Programa</label><input type="text" id="progName" onfocus="this.select()" oninput="saveCurrentRoutineMeta()"></div>
+      <div class="field"><label>PGM N°</label><input type="text" id="progNumber" onfocus="this.select()" oninput="saveCurrentRoutineMeta()"></div>
+      <div class="field"><label>Fecha de Emisión</label><input type="text" id="progDate" placeholder="DD/MM/AAAA" onfocus="this.select()" oninput="handleEditorDateInput(this)"></div>
+      <div class="field"><label>Conducción</label><input type="text" id="progHosts" onfocus="this.select()" oninput="saveCurrentRoutineMeta()"></div>
+      <div class="field"><label>Producción</label><input type="text" id="progProducers" onfocus="this.select()" oninput="saveCurrentRoutineMeta()"></div>
     </div>
 
-    <!-- Barra de Estadísticas -->
     <div class="stats-bar">
       <div class="stat-item">Secciones: <span class="stat-value" id="statSecs">0</span></div>
       <div class="stat-item">Tandas: <span class="stat-value" id="statTandas">0</span></div>
       <div class="stat-item">Bloques: <span class="stat-value" id="statBlocks">0</span></div>
       <div class="stat-item">Duración sin Tandas: <span class="stat-value" id="statDurNoTanda">00:00</span></div>
-      <div class="stat-item">Duración TOTAL (con Tandas): <span class="stat-value" id="statDurTotal">00:00</span></div>
+      <div class="stat-item">Duración TOTAL: <span class="stat-value" id="statDurTotal">00:00</span></div>
     </div>
 
-    <!-- Botones de Acción Editor -->
     <div class="actions-bar no-print" style="margin-bottom: 15px; display: flex; justify-content: space-between;">
       <div style="display: flex; gap: 8px;">
         <button class="btn" onclick="addRow('sec')">➕ Agregar Sección</button>
@@ -339,7 +281,6 @@
       <button class="btn btn-secondary" onclick="resetRoutineData()">🗑️ Vaciar Rutina</button>
     </div>
 
-    <!-- Tabla Principal del Editor -->
     <table class="routine-table" id="editorTable">
       <thead>
         <tr>
@@ -354,15 +295,11 @@
           <th class="no-print" style="width: 40px;"></th>
         </tr>
       </thead>
-      <tbody id="routineBody">
-        <!-- Generado con JS -->
-      </tbody>
+      <tbody id="routineBody"></tbody>
     </table>
   </div>
-
 </div>
 
-<!-- MODAL CREACIÓN / EDICIÓN DE PROGRAMA -->
 <div id="modalProgram" class="modal-backdrop hidden">
   <div class="modal-content">
     <div class="modal-header">
@@ -371,15 +308,8 @@
     </div>
     <form onsubmit="handleSaveProgram(event)">
       <input type="hidden" id="progFormId">
-      
-      <div class="form-group">
-        <label>Nombre del Programa</label>
-        <input type="text" id="progFormName" placeholder="Nombre del Programa" required>
-      </div>
-      <div class="form-group">
-        <label>Canal / Medio</label>
-        <input type="text" id="progFormChannel" placeholder="Nombre del Canal" required>
-      </div>
+      <div class="form-group"><label>Nombre del Programa</label><input type="text" id="progFormName" required></div>
+      <div class="form-group"><label>Canal / Medio</label><input type="text" id="progFormChannel" required></div>
       <div class="form-group">
         <label>Logo del Programa</label>
         <input type="file" id="progFormLogoInput" accept="image/*" onchange="handleProgramLogoUpload(event)">
@@ -389,22 +319,13 @@
         </div>
       </div>
       <div style="display: flex; gap: 10px;">
-        <div class="form-group" style="flex: 1;">
-          <label>Conducción Predeterminada</label>
-          <input type="text" id="progFormHosts" placeholder="Conductor 1, Conductor 2">
-        </div>
-        <div class="form-group" style="flex: 1;">
-          <label>Producción Predeterminada</label>
-          <input type="text" id="progFormProducers" placeholder="Productor A, Productor B">
-        </div>
+        <div class="form-group" style="flex: 1;"><label>Conducción Predeterminada</label><input type="text" id="progFormHosts"></div>
+        <div class="form-group" style="flex: 1;"><label>Producción Predeterminada</label><input type="text" id="progFormProducers"></div>
       </div>
       <div style="display: flex; gap: 10px;">
+        <div class="form-group" style="flex: 1;"><label>Fecha 1ª Emisión (DD/MM/AAAA)</label><input type="text" id="progFormFirstDate" placeholder="DD/MM/AAAA" oninput="handleFirstDateInput(this)" required></div>
         <div class="form-group" style="flex: 1;">
-          <label>Fecha 1ª Emisión (DD/MM/AAAA)</label>
-          <input type="text" id="progFormFirstDate" placeholder="DD/MM/AAAA" oninput="handleFirstDateInput(this)" required>
-        </div>
-        <div class="form-group" style="flex: 1;">
-          <label>Horario Habitual (Desde - Hasta)</label>
+          <label>Horario (Desde - Hasta)</label>
           <div style="display:flex; gap:4px;">
             <input type="text" id="progFormTimeStart" placeholder="15:00" oninput="handleTimeInput(this)">
             <input type="text" id="progFormTimeEnd" placeholder="17:00" oninput="handleTimeInput(this)">
@@ -424,7 +345,6 @@
           <div class="day-pill" data-day="-1" onclick="toggleDayPill(this)" style="font-weight:normal;">Sin definir</div>
         </div>
       </div>
-
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
         <button type="button" class="btn btn-secondary" onclick="closeModal('modalProgram')">Cancelar</button>
         <button type="submit" class="btn btn-success">Guardar Programa</button>
@@ -433,25 +353,17 @@
   </div>
 </div>
 
-<!-- MODAL GESTIÓN DE USUARIOS -->
 <div id="modalUsers" class="modal-backdrop hidden">
   <div class="modal-content" style="max-width: 650px;">
     <div class="modal-header">
       <div style="font-weight: 700; font-size: 1.1rem;">Gestión de Usuarios y Permisos</div>
       <button class="btn btn-secondary btn-sm" onclick="closeModal('modalUsers')">✕</button>
     </div>
-    
     <form onsubmit="handleSaveUser(event)" style="background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
       <input type="hidden" id="userFormId">
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-        <div class="form-group" style="margin-bottom:0;">
-          <label>Usuario</label>
-          <input type="text" id="userFormName" placeholder="Nombre" required>
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label>Contraseña</label>
-          <input type="text" id="userFormPass" placeholder="Clave" required>
-        </div>
+        <div class="form-group" style="margin-bottom:0;"><label>Usuario</label><input type="text" id="userFormName" required></div>
+        <div class="form-group" style="margin-bottom:0;"><label>Contraseña</label><input type="text" id="userFormPass" required></div>
         <div class="form-group" style="margin-bottom:0;">
           <label>Rol</label>
           <select id="userFormRole">
@@ -461,55 +373,33 @@
           </select>
         </div>
       </div>
-      
       <div class="form-group" style="margin-top: 10px; margin-bottom:0;">
         <label>Programas Asignados</label>
-        <div id="userFormProgramsCheckboxes" style="display:flex; flex-wrap:wrap; gap:10px; background:var(--card-bg); padding:8px; border-radius:4px; max-height:80px; overflow-y:auto;">
-          <!-- JS checkboxes -->
-        </div>
+        <div id="userFormProgramsCheckboxes" style="display:flex; flex-wrap:wrap; gap:10px; background:var(--card-bg); padding:8px; border-radius:4px; max-height:80px; overflow-y:auto;"></div>
       </div>
-
       <button type="submit" class="btn btn-sm btn-success" style="margin-top: 10px; width: 100%; justify-content: center;">Guardar Usuario</button>
     </form>
-
     <table class="routine-table">
       <thead>
-        <tr>
-          <th>USUARIO</th>
-          <th>ROL</th>
-          <th>PROGRAMAS</th>
-          <th style="width: 80px; text-align: center;">ACCIONES</th>
-        </tr>
+        <tr><th>USUARIO</th><th>ROL</th><th>PROGRAMAS</th><th style="width: 80px; text-align: center;">ACCIONES</th></tr>
       </thead>
-      <tbody id="usersListBody">
-        <!-- Carga dinámica usuarios -->
-      </tbody>
+      <tbody id="usersListBody"></tbody>
     </table>
   </div>
 </div>
 
-<!-- MODAL NUEVA RUTINA -->
 <div id="modalNewRoutine" class="modal-backdrop hidden">
   <div class="modal-content" style="max-width: 420px; text-align: center;">
     <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 10px;">Crear Nueva Rutina</div>
-    <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
-      ¿Cómo querés inicializar la estructura de esta nueva emisión?
-    </div>
-    
+    <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">¿Cómo querés inicializar la estructura de esta nueva emisión?</div>
     <div style="display: flex; flex-direction: column; gap: 10px;">
-      <button class="btn btn-secondary" style="justify-content: center; padding: 12px;" onclick="createNewRoutine(true)">
-        📋 Duplicar la última rutina emitida
-      </button>
-      <button class="btn" style="justify-content: center; padding: 12px;" onclick="createNewRoutine(false)">
-        ✨ Empezar de cero (100% limpia)
-      </button>
+      <button class="btn btn-secondary" style="justify-content: center; padding: 12px;" onclick="createNewRoutine(true)">📋 Duplicar la última rutina emitida</button>
+      <button class="btn" style="justify-content: center; padding: 12px;" onclick="createNewRoutine(false)">✨ Empezar de cero (100% limpia)</button>
     </div>
-    
     <button class="btn btn-secondary btn-sm" style="margin-top: 15px;" onclick="closeModal('modalNewRoutine')">Cancelar</button>
   </div>
 </div>
 
-<!-- PLANTILLA OCULTA PDF -->
 <div id="pdfTemplate">
   <div class="pdf-header">
     <div class="pdf-title-block">
@@ -542,10 +432,9 @@
   <div class="pdf-footer" id="pdfFooterText">RUTINA DE PROGRAMA</div>
 </div>
 
-<!-- FIREBASE SDKS & NÚCLEO CON REALTIME DATABASE (CON AUTENTICACIÓN) -->
+<!-- NÚCLEO DE CONEXIÓN DIRECTA A REALTIME DATABASE (SIN AUTH RESTRINGIDA) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
   import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
   const firebaseConfig = {
@@ -561,7 +450,6 @@
 
   const app = initializeApp(firebaseConfig);
   const database = getDatabase(app);
-  const auth = getAuth(app);
 
   const defaultDb = {
     users: [
@@ -613,7 +501,6 @@
 
   async function initFirebaseSync() {
     try {
-      await signInAnonymously(auth);
       const snapshot = await get(dbRef);
       if (snapshot.exists()) {
         window.dbState = snapshot.val();
