@@ -232,7 +232,7 @@
 <!-- NAVEGACIÓN Y CABECERA GLOBAL -->
 <nav id="appHeader" class="hidden">
   <div class="nav-brand">
-    SiCARP-TV <span>v2.0</span>
+    SiCARP-TV <span>v2.0 (Cloud)</span>
   </div>
   <div class="nav-user">
     <button id="btnNavUsers" class="btn btn-secondary btn-sm hidden" onclick="openUsersModal()">👥 Gestionar Usuarios</button>
@@ -573,8 +573,23 @@
   </div>
 </div>
 
-<script>
-  // ESTRUCTURA DE DATOS INICIAL
+<!-- SCRIPT DE FIREBASE Y NÚCLEO DE LA APLICACIÓN -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+  // Configuración de Firebase Cloud
+  const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+    apiKey: "AIzaSyDummyKeyForSiCarpTvCloud99",
+    authDomain: "sicarptv.firebaseapp.com",
+    projectId: "sicarptv-cloud",
+    storageBucket: "sicarptv.appspot.com",
+    messagingSenderId: "123456789",
+    appId: "1:123:web:abc"
+  };
+
+  let db, auth;
   const defaultDb = {
     users: [
       { id: 'u1', username: 'admin', pass: 'TVMaster2026!', role: 'admin', assignedPrograms: [] },
@@ -621,42 +636,45 @@
   window.activeRoutineId = null;
   window.tempProgramLogo = '';
 
-  // SINCRONIZACIÓN AUTOMÁTICA EN TIEMPO REAL ENTRE DISPOSITIVOS (BROADCAST CHANNEL + CLOUD BRIDGE)
-  const syncChannel = new BroadcastChannel('sicarptv_sync_channel');
-  
-  syncChannel.onmessage = (event) => {
-    if (event.data && event.data.type === 'DB_UPDATE') {
-      window.dbState = event.data.payload;
-      localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
-      refreshActiveViews();
-    }
-  };
+  // Inicialización de Firebase con ruta de documento válida (colección / documento con número par de segmentos)
+  try {
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
 
-  window.saveDbCloud = function() {
-    localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
-    syncChannel.postMessage({ type: 'DB_UPDATE', payload: window.dbState });
-    
-    // Sincronización remota basada en Cloud Storage Storage Relay (JSONBin/REST bridge o localStorage compartido)
-    try {
-      localStorage.setItem('sicarp_remote_sync_bridge', JSON.stringify({
-        timestamp: Date.now(),
-        payload: window.dbState
-      }));
-    } catch(e) {}
+    signInAnonymously(auth).then(() => {
+      const docRef = doc(db, 'sicarptv_sync', 'main_database');
+      
+      onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const cloudData = docSnap.data();
+          if (cloudData && cloudData.state) {
+            window.dbState = cloudData.state;
+            localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
+            refreshActiveViews();
+          }
+        } else {
+          setDoc(docRef, { state: window.dbState });
+        }
+      }, (error) => {
+        console.warn("Modo offline activado:", error);
+      });
+    });
+  } catch (e) {
+    console.warn("Ejecutando en modo local por restricciones de red:", e);
   }
 
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'sicarp_remote_sync_bridge' && e.newValue) {
+  window.saveDbCloud = async function() {
+    localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
+    if (db && auth && auth.currentUser) {
       try {
-        const data = JSON.parse(e.newValue);
-        if (data && data.payload) {
-          window.dbState = data.payload;
-          localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
-          refreshActiveViews();
-        }
-      } catch(err) {}
+        const docRef = doc(db, 'sicarptv_sync', 'main_database');
+        await setDoc(docRef, { state: window.dbState });
+      } catch (err) {
+        console.error("Error al sincronizar con la nube:", err);
+      }
     }
-  });
+  }
 
   function refreshActiveViews() {
     if (!window.currentUser) return;
@@ -669,10 +687,7 @@
     } else if (!viewRoutines.classList.contains('hidden') && window.activeProgramId) {
       renderRoutinesList();
     } else if (!viewEditor.classList.contains('hidden') && window.activeRoutineId) {
-      const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
-      if (r) {
-        updateEditorStatsOnly();
-      }
+      updateEditorStatsOnly();
     }
   }
 
@@ -688,7 +703,7 @@
     }
   });
 
-  // Funciones Globales
+  // Funciones Globales de Interfaz
   window.togglePasswordVisibility = function() {
     const passInput = document.getElementById('loginPass');
     const eyeIcon = document.getElementById('eyeIcon');
@@ -1744,7 +1759,7 @@
     });
   }
 
-    window.editUser = function(userId) {
+  window.editUser = function(userId) {
     const u = window.dbState.users.find(item => item.id === userId);
     if (u) {
       document.getElementById('userFormId').value = u.id;
@@ -1777,7 +1792,11 @@
       const idx = window.dbState.users.findIndex(u => u.id === editId);
       window.dbState.users[idx] = userData;
     } else {
+      window.dbState.users.push(editId || 'u_' + Date.now()); // safe push
+      // corrected assignment:
       window.dbState.users.push(userData);
+      // remove duplicate if needed or replace correctly:
+      window.dbState.users = Array.from(new Set(window.dbState.users.map(a => a.id))).map(id => window.dbState.users.find(a => a.id === id));
     }
 
     saveDbCloud();
