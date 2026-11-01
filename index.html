@@ -582,8 +582,27 @@
   </div>
 </div>
 
-<!-- NÚCLEO DE LA APLICACIÓN CON CLOUD SYNC AUTOMÁTICO -->
-<script>
+<!-- FIREBASE SDKS & NÚCLEO DE LA APLICACIÓN CON CLOUD SYNC REAL -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCqXF8iasjqF3G8UsSyvOC1Gu8PF1msBNQ",
+    authDomain: "sicarp-tv.firebaseapp.com",
+    databaseURL: "https://sicarp-tv-default-rtdb.firebaseio.com",
+    projectId: "sicarp-tv",
+    storageBucket: "sicarp-tv.firebasestorage.app",
+    messagingSenderId: "402441481240",
+    appId: "1:402441481240:web:46d3018a2de75af4d4276d",
+    measurementId: "G-MQKDX23MGP"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
   const defaultDb = {
     users: [
       { id: 'u1', username: 'admin', pass: 'TVMaster2026!', role: 'admin', assignedPrograms: [] },
@@ -630,56 +649,53 @@
   window.activeRoutineId = null;
   window.tempProgramLogo = '';
 
-  // Sincronización en la Nube en Tiempo Real vía JSONbin / Endpoint público compartido
-  const SYNC_URL = 'https://api.jsonbin.io/v3/b/6612a363acd3cb34a8335310'; // Endpoint universal compartido SiCARP-TV
-  const SYNC_KEY = '$2a$10$wN38oGkGz1W2wK0m4fJ5uO7uX4Z7v9K9s6X2t5V1b3m8Q9p4K9s2G';
+  const docRef = doc(db, 'sicarptv_sync', 'main_database');
 
-  async function fetchCloudDb() {
+  async function initFirebaseSync() {
     try {
-      const res = await fetch(SYNC_URL + '/latest', {
-        headers: { 'X-Master-Key': SYNC_KEY }
-      });
-      if (res.ok) {
-        const json = await res.json();
-        if (json && json.record && json.record.state) {
-          window.dbState = json.record.state;
+      await signInAnonymously(auth);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        window.dbState = snap.data();
+        localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
+        refreshActiveViews();
+      } else {
+        await setDoc(docRef, window.dbState);
+      }
+
+      // Escuchar cambios en tiempo real desde cualquier dispositivo
+      onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          window.dbState = docSnap.data();
           localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
           refreshActiveViews();
           document.getElementById('syncDot').style.background = '#22c55e';
           document.getElementById('syncText').innerText = 'Sincronizado Cloud';
         }
-      }
+      }, (error) => {
+        document.getElementById('syncDot').style.background = '#ef4444';
+        document.getElementById('syncText').innerText = 'Error de Sincronización';
+      });
+
     } catch (e) {
       document.getElementById('syncDot').style.background = '#eab308';
-      document.getElementById('syncText').innerText = 'Modo Local (Offline)';
+      document.getElementById('syncText').innerText = 'Modo Local';
     }
   }
 
-  async function saveDbCloud() {
+  window.saveDbCloud = async function() {
     localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
     try {
       document.getElementById('syncDot').style.background = '#3b82f6';
-      document.getElementById('syncText').innerText = 'Sincronizando...';
-      const res = await fetch(SYNC_URL, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Master-Key': SYNC_KEY
-        },
-        body: JSON.stringify({ state: window.dbState })
-      });
-      if (res.ok) {
-        document.getElementById('syncDot').style.background = '#22c55e';
-        document.getElementById('syncText').innerText = 'Sincronizado Cloud';
-      }
+      document.getElementById('syncText').innerText = 'Guardando...';
+      await setDoc(docRef, window.dbState);
+      document.getElementById('syncDot').style.background = '#22c55e';
+      document.getElementById('syncText').innerText = 'Sincronizado Cloud';
     } catch (e) {
       document.getElementById('syncDot').style.background = '#ef4444';
-      document.getElementById('syncText').innerText = 'Error de Sincronización';
+      document.getElementById('syncText').innerText = 'Error al Guardar';
     }
   }
-
-  // Refresco periódico cada 5 segundos para mantener compu y celu sincronizados en vivo
-  setInterval(fetchCloudDb, 5000);
 
   function refreshActiveViews() {
     if (!window.currentUser) return;
@@ -697,7 +713,7 @@
   }
 
   window.addEventListener('DOMContentLoaded', () => {
-    fetchCloudDb();
+    initFirebaseSync();
     const savedUsername = localStorage.getItem('sicarp_current_user');
     if (savedUsername) {
       setTimeout(() => {
@@ -705,7 +721,7 @@
         if (foundUser) {
           initSession(foundUser);
         }
-      }, 400);
+      }, 500);
     }
   });
 
