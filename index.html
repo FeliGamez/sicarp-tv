@@ -55,7 +55,12 @@
     .form-group { margin-bottom: 14px; }
     .form-group label { display: block; font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; }
 
-    /* Custom input & select table styling */
+    .password-input-container { position: relative; display: flex; align-items: center; }
+    .password-input-container input { width: 100%; padding-right: 40px; }
+    .toggle-password-btn { position: absolute; right: 10px; background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 4px; }
+    .toggle-password-btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .toggle-password-btn:hover { color: white; }
+
     td input[type="text"], td select {
       width: 100%;
       background: #0f172a;
@@ -85,24 +90,6 @@
     .login-card { background: var(--card-bg); border: 1px solid var(--border-color); width: 100%; max-width: 400px; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
     .login-title { font-size: 1.4rem; font-weight: 800; text-align: center; margin-bottom: 6px; }
     .login-subtitle { font-size: 0.8rem; text-align: center; color: var(--text-muted); margin-bottom: 24px; }
-    
-    .password-input-container { position: relative; display: flex; align-items: center; }
-    .password-input-container input { padding-right: 40px; }
-    .toggle-password-btn { 
-      position: absolute; 
-      right: 10px; 
-      background: none; 
-      border: none; 
-      color: var(--text-muted); 
-      cursor: pointer; 
-      padding: 4px; 
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: color 0.2s;
-    }
-    .toggle-password-btn:hover { color: #ffffff; }
-    .toggle-password-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     
     /* DASHBOARD / GRID PROGRAMAS */
     .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -191,18 +178,9 @@
     .pdf-av-num { font-size: 9px; color: #64748b; font-weight: 600; }
 
     .pdf-footer { border-top: 2px solid #000; padding-top: 8px; display: flex; justify-content: space-between; font-size: 8.5px; font-weight: 700; color: #334155; text-transform: uppercase; margin-top: 15px; }
-    
-    .sync-status { position: fixed; bottom: 10px; right: 10px; background: #1e293b; border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; z-index: 999; display: flex; align-items: center; gap: 6px; }
-    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
   </style>
 </head>
 <body>
-
-<!-- INDICADOR DE ESTADO DE SINCRONIZACIÓN -->
-<div class="sync-status">
-  <div class="sync-dot" id="syncDot"></div>
-  <span id="syncText">Sincronizado Cloud</span>
-</div>
 
 <!-- PANTALLA DE INICIO DE SESIÓN -->
 <div id="viewLogin" class="login-wrapper">
@@ -215,17 +193,16 @@
       Usuario o contraseña incorrectos
     </div>
 
-    <form id="loginForm" autocomplete="on" onsubmit="handleLogin(event)">
+    <form autocomplete="on" onsubmit="handleLogin(event)">
       <div class="form-group">
-        <label for="loginUser">Usuario</label>
-        <input type="text" id="loginUser" name="username" placeholder="Usuario" autocomplete="username" autocapitalize="none" required>
+        <label>Usuario</label>
+        <input type="text" id="loginUser" name="username" placeholder="Usuario" autocomplete="username" required>
       </div>
       <div class="form-group">
-        <label for="loginPass">Contraseña</label>
+        <label>Contraseña</label>
         <div class="password-input-container">
           <input type="password" id="loginPass" name="password" placeholder="Contraseña" autocomplete="current-password" required>
           <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility()" title="Ver u ocultar contraseña" id="btnTogglePass">
-            <!-- Icono Ojo Minimalista Vectorial (2D SVG) -->
             <svg id="eyeIcon" viewBox="0 0 24 24">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
               <circle cx="12" cy="12" r="3"></circle>
@@ -241,9 +218,13 @@
 <!-- NAVEGACIÓN Y CABECERA GLOBAL -->
 <nav id="appHeader" class="hidden">
   <div class="nav-brand">
-    SiCARP-TV <span>v2.0 (Cloud Sync)</span>
+    SiCARP-TV <span>v2.0</span>
   </div>
   <div class="nav-user">
+    <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; background: #0f172a; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color);">
+      <div id="syncDot" style="width: 8px; height: 8px; border-radius: 50%; background: #eab308;"></div>
+      <span id="syncText">Conectando...</span>
+    </div>
     <button id="btnNavUsers" class="btn btn-secondary btn-sm hidden" onclick="openUsersModal()">👥 Gestionar Usuarios</button>
     <div>Usuario: <span id="navUsername" class="user-badge">Admin</span></div>
     <button class="btn btn-danger btn-sm" onclick="logout()">Cerrar Sesión</button>
@@ -460,7 +441,6 @@
       <button class="btn btn-secondary btn-sm" onclick="closeModal('modalUsers')">✕</button>
     </div>
     
-    <!-- Formulario Crear/Editar Usuario -->
     <form onsubmit="handleSaveUser(event)" style="background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
       <input type="hidden" id="userFormId">
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
@@ -508,7 +488,7 @@
   </div>
 </div>
 
-<!-- MODAL NUEVA RUTINA (OPCIÓN DUPLICAR O DESDE CERO) -->
+<!-- MODAL NUEVA RUTINA -->
 <div id="modalNewRoutine" class="modal-backdrop hidden">
   <div class="modal-content" style="max-width: 420px; text-align: center;">
     <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 10px;">Crear Nueva Rutina</div>
@@ -529,7 +509,7 @@
   </div>
 </div>
 
-<!-- PLANTILLA OCULTA EXCLUSIVA PARA EL PDF DESCARGABLE -->
+<!-- PLANTILLA OCULTA PDF -->
 <div id="pdfTemplate">
   <div class="pdf-header">
     <div class="pdf-title-block">
@@ -539,28 +519,13 @@
     </div>
     <img id="pdfLogo" class="pdf-logo" style="display:none;" alt="Logo">
   </div>
-
   <table class="pdf-meta-table">
     <tr>
       <td><span class="pdf-meta-label">FECHA:</span> <span class="pdf-meta-val" id="pdfProgDate">01/11/2026</span></td>
       <td><span class="pdf-meta-label">CONDUCCIÓN:</span> <span class="pdf-meta-val" id="pdfProgHosts">-</span></td>
       <td><span class="pdf-meta-label">PRODUCCIÓN:</span> <span class="pdf-meta-val" id="pdfProgProducers">-</span></td>
     </tr>
-    <tr>
-      <td colspan="3" style="padding:0;">
-        <table style="width:100%; border-collapse:collapse;">
-          <tr>
-            <td class="pdf-meta-subtd" style="width:20%; border-right:1px solid #cbd5e1;"><span class="pdf-meta-label">BLOQUES:</span> <span class="pdf-meta-val" id="pdfMetaBlocks">0</span></td>
-            <td class="pdf-meta-subtd" style="width:20%; border-right:1px solid #cbd5e1;"><span class="pdf-meta-label">TANDAS:</span> <span class="pdf-meta-val" id="pdfMetaTandas">0</span></td>
-            <td class="pdf-meta-subtd" style="width:20%; border-right:1px solid #cbd5e1;"><span class="pdf-meta-label">SECCIONES:</span> <span class="pdf-meta-val" id="pdfMetaSecs">0</span></td>
-            <td class="pdf-meta-subtd" style="width:20%; border-right:1px solid #cbd5e1;"><span class="pdf-meta-label">DUR. SIN TANDAS:</span> <span class="pdf-meta-val" id="pdfMetaNoTanda">00:00</span></td>
-            <td class="pdf-meta-subtd" style="width:20%;"><span class="pdf-meta-label">DUR. TOTAL:</span> <span class="pdf-meta-val" id="pdfMetaTotal">00:00</span></td>
-          </tr>
-        </table>
-      </td>
-    </tr>
   </table>
-
   <table class="pdf-table">
     <thead>
       <tr>
@@ -572,17 +537,12 @@
         <th style="width: 60px; text-align: center;">TIEMPO</th>
       </tr>
     </thead>
-    <tbody id="pdfTableBody">
-      <!-- Carga dinámica -->
-    </tbody>
+    <tbody id="pdfTableBody"></tbody>
   </table>
-
-  <div class="pdf-footer" id="pdfFooterText">
-    RUTINA DE PROGRAMA
-  </div>
+  <div class="pdf-footer" id="pdfFooterText">RUTINA DE PROGRAMA</div>
 </div>
 
-<!-- FIREBASE SDKS & NÚCLEO DE LA APLICACIÓN CON CLOUD SYNC REAL -->
+<!-- FIREBASE SDKS & NÚCLEO DE APLICACIÓN CON SYNC CLOUD REAL -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -634,10 +594,10 @@
         hosts: 'Conductor A, Conductor B',
         producers: 'Productor A',
         routine: [
-          { type: 'sec', duration: '01:20', style: 'APERTURA', styleCustom: '', title: 'Apertura de Programa', detail: 'Presentación del programa y sumario', av: 'NINGUNO', avCustom: '', avNum: '' },
-          { type: 'sec', duration: '15:00', style: 'ENTREVISTA', styleCustom: '', title: 'Nota Principal', detail: 'Entrevista en piso', av: 'APOYO', avCustom: '', avNum: '102' },
+          { type: 'sec', duration: '01:20', style: 'APERTURA', styleCustom: '', title: 'Apertura de Programa', detail: 'Presentación', av: 'NINGUNO', avCustom: '', avNum: '' },
+          { type: 'sec', duration: '15:00', style: 'ENTREVISTA', styleCustom: '', title: 'Nota Principal', detail: 'Entrevista', av: 'APOYO', avCustom: '', avNum: '102' },
           { type: 'tanda', duration: '05:00', style: 'TANDA', title: 'TANDA COMERCIAL N°1', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' },
-          { type: 'sec', duration: '10:00', style: 'INFORME', styleCustom: '', title: 'Informe Especial', detail: 'Video grabado', av: 'TOTAL', avCustom: '', avNum: '088' }
+          { type: 'sec', duration: '10:00', style: 'INFORME', styleCustom: '', title: 'Informe Especial', detail: 'Video', av: 'TOTAL', avCustom: '', avNum: '088' }
         ]
       }
     ]
@@ -663,7 +623,6 @@
         await setDoc(docRef, window.dbState);
       }
 
-      // Escuchar cambios en tiempo real desde cualquier dispositivo
       onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
           window.dbState = docSnap.data();
@@ -712,20 +671,11 @@
     }
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
-    initFirebaseSync();
-    const savedUsername = localStorage.getItem('sicarp_current_user');
-    if (savedUsername) {
-      setTimeout(() => {
-        const foundUser = window.dbState.users.find(u => u.username.toLowerCase() === savedUsername.toLowerCase());
-        if (foundUser) {
-          initSession(foundUser);
-        }
-      }, 500);
-    }
-  });
+  // LOGICA GENERAL DE LA APP
+  window.saveDb = function() {
+    window.saveDbCloud();
+  }
 
-  // Funciones Globales de Interfaz
   window.togglePasswordVisibility = function() {
     const passInput = document.getElementById('loginPass');
     const eyeIcon = document.getElementById('eyeIcon');
@@ -742,11 +692,9 @@
     e.preventDefault();
     const userVal = document.getElementById('loginUser').value.trim();
     const passVal = document.getElementById('loginPass').value.trim();
-    
     const user = window.dbState.users.find(u => u.username.toLowerCase() === userVal.toLowerCase() && u.pass === passVal);
     
     if (user) {
-      localStorage.setItem('sicarp_current_user', user.username);
       initSession(user);
     } else {
       document.getElementById('loginError').classList.remove('hidden');
@@ -755,11 +703,11 @@
 
   function initSession(user) {
     window.currentUser = user;
+    localStorage.setItem('sicarp_current_user', user.username);
     document.getElementById('loginError').classList.add('hidden');
     document.getElementById('viewLogin').classList.add('hidden');
     document.getElementById('appHeader').classList.remove('hidden');
     document.getElementById('mainContainer').classList.remove('hidden');
-    
     document.getElementById('navUsername').innerText = `${user.username} (${user.role.toUpperCase()})`;
     
     if (user.role === 'admin') {
@@ -773,15 +721,14 @@
         document.getElementById('btnNewProgram').classList.remove('hidden');
       }
     }
-
     navToPrograms();
   }
 
   window.logout = function() {
-    localStorage.removeItem('sicarp_current_user');
     window.currentUser = null;
     window.activeProgramId = null;
     window.activeRoutineId = null;
+    localStorage.removeItem('sicarp_current_user');
     document.getElementById('loginUser').value = '';
     document.getElementById('loginPass').value = '';
     document.getElementById('loginError').classList.add('hidden');
@@ -793,7 +740,6 @@
     document.getElementById('viewLogin').classList.remove('hidden');
   }
 
-  // NAVEGACIÓN
   window.navToPrograms = function() {
     window.activeProgramId = null;
     window.activeRoutineId = null;
@@ -811,17 +757,14 @@
     document.getElementById('viewRoutinesList').classList.remove('hidden');
     
     const prog = window.dbState.programs.find(p => p.id === progId);
-    if (prog) {
-      document.getElementById('routineListProgTitle').innerText = prog.name;
-      document.getElementById('routineListProgSub').innerText = `${prog.channel} | Emisiones cargadas`;
-    }
+    document.getElementById('routineListProgTitle').innerText = prog.name;
+    document.getElementById('routineListProgSub').innerText = `${prog.channel} | Emisiones cargadas`;
     
     if (window.currentUser.role === 'conduccion') {
       document.getElementById('btnNewRoutine').classList.add('hidden');
     } else {
       document.getElementById('btnNewRoutine').classList.remove('hidden');
     }
-
     renderRoutinesList();
   }
 
@@ -832,8 +775,6 @@
     document.getElementById('viewRoutineEditor').classList.remove('hidden');
     
     const r = window.dbState.routines.find(item => item.id === routineId);
-    if (!r) return;
-    
     document.getElementById('progChannel').value = r.channel || '';
     document.getElementById('progName').value = r.name || '';
     document.getElementById('progNumber').value = r.pgmNum || '001';
@@ -849,15 +790,12 @@
       editorContainer.classList.remove('live-mode');
       document.getElementById('editorMetaGrid').querySelectorAll('input').forEach(i => i.disabled = false);
     }
-
     renderEditorTable();
   }
 
-  // RENDERS
-  function renderProgramsGrid() {
+  window.renderProgramsGrid = function() {
     const grid = document.getElementById('programsGrid');
     grid.innerHTML = '';
-
     let allowedProgs = [];
     if (window.currentUser.role === 'admin') {
       allowedProgs = window.dbState.programs;
@@ -867,16 +805,13 @@
     }
 
     if (allowedProgs.length === 0) {
-      grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-color);">
-        No tenés programas asignados o disponibles para mostrar.
-      </div>`;
+      grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-color);">No tenés programas asignados o disponibles.</div>`;
       return;
     }
 
     allowedProgs.forEach(p => {
       const card = document.createElement('div');
       card.className = 'card-program';
-      
       const daysText = formatDaysText(p.daysList);
       const timeText = (p.timeStart && p.timeEnd) ? `${p.timeStart} a ${p.timeEnd} hs` : 'Sin horario';
 
@@ -908,10 +843,9 @@
     });
   }
 
-  function renderRoutinesList() {
+  window.renderRoutinesList = function() {
     const tbody = document.getElementById('routinesListBody');
     tbody.innerHTML = '';
-    
     const progtines = window.dbState.routines.filter(r => r.programId === window.activeProgramId);
     
     if (progtines.length === 0) {
@@ -921,7 +855,6 @@
 
     progtines.forEach(r => {
       const tr = document.createElement('tr');
-      
       let durTotal = '00:00';
       let secSecs = 0;
       (r.routine || []).forEach(item => {
@@ -929,7 +862,6 @@
         secSecs += (parseInt(parts[0])||0)*60 + (parseInt(parts[1])||0);
       });
       durTotal = formatSeconds(secSecs);
-
       const dayName = getDayNameFromDate(r.date);
 
       tr.innerHTML = `
@@ -950,7 +882,6 @@
     });
   }
 
-  // PROGRAMAS ACTIONS
   window.openProgramModal = function(editId = null) {
     const modal = document.getElementById('modalProgram');
     document.getElementById('progFormId').value = editId || '';
@@ -992,7 +923,6 @@
         }
       }
     }
-
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
   }
@@ -1031,7 +961,6 @@
   window.handleSaveProgram = function(e) {
     e.preventDefault();
     const editId = document.getElementById('progFormId').value;
-    
     const selectedDays = [];
     document.querySelectorAll('#daysPicker .day-pill.selected').forEach(p => {
       selectedDays.push(parseInt(p.getAttribute('data-day')));
@@ -1057,7 +986,7 @@
       window.dbState.programs.push(progData);
     }
 
-    saveDbCloud();
+    window.saveDb();
     closeModal('modalProgram');
     renderProgramsGrid();
   }
@@ -1069,7 +998,7 @@
       newP.id = 'p_' + Date.now();
       newP.name = `${p.name} (Copia)`;
       window.dbState.programs.push(newP);
-      saveDbCloud();
+      window.saveDb();
       renderProgramsGrid();
     }
   }
@@ -1078,12 +1007,11 @@
     if (confirm('¿Seguro que querés eliminar este programa y todas sus rutinas?')) {
       window.dbState.programs = window.dbState.programs.filter(p => p.id !== progId);
       window.dbState.routines = window.dbState.routines.filter(r => r.programId !== progId);
-      saveDbCloud();
+      window.saveDb();
       renderProgramsGrid();
     }
   }
 
-  // CREAR RUTINA NUEVA AUTOMÁTICA Y LÓGICA DE PGM N°
   window.openNewRoutineDialog = function() {
     document.getElementById('modalNewRoutine').classList.remove('hidden');
     document.getElementById('modalNewRoutine').style.display = 'flex';
@@ -1114,7 +1042,6 @@
     }
 
     const calculatedPgmNum = calculatePgmNumForDate(prog, nextDateStr);
-
     const newRoutine = {
       id: 'r_' + Date.now(),
       programId: window.activeProgramId,
@@ -1128,30 +1055,27 @@
     };
 
     window.dbState.routines.push(newRoutine);
-    saveDbCloud();
+    window.saveDb();
     navToEditor(newRoutine.id);
   }
 
   window.deleteRoutine = function(routineId) {
     if (confirm('¿Eliminar esta rutina?')) {
       window.dbState.routines = window.dbState.routines.filter(r => r.id !== routineId);
-      saveDbCloud();
+      window.saveDb();
       renderRoutinesList();
     }
   }
 
-  // EDITOR TABLA RUTINA
-  function renderEditorTable() {
+  window.renderEditorTable = function() {
     const tbody = document.getElementById('routineBody');
     tbody.innerHTML = '';
-    
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
     if (!r) return;
     const routineData = r.routine || [];
 
     let secCount = 1;
     let tandaCount = 1;
-
     let blockGroups = [];
     let currentBlockNum = 1;
     let currentBlockItemsCount = 0;
@@ -1185,11 +1109,9 @@
       if (item.type === 'tanda') {
         const tandaTitle = `TANDA COMERCIAL N°${tandaCount++}`;
         item.title = tandaTitle;
-
         html += `<td class="block-cell" style="color:#ef4444; font-size:0.85rem;">TANDA</td>`;
         html += `<td><input type="text" class="duration-input" value="${item.duration}" onfocus="this.select()" oninput="handleDurationInput(this, ${index})"></td>`;
         html += `<td colspan="4"><input type="text" style="font-weight:bold; color:#f87171;" value="${tandaTitle}" disabled></td>`;
-
         groupPointer++;
         rowInGroupCounter = 0;
       } else {
@@ -1200,7 +1122,6 @@
 
         secCount++;
         html += `<td><input type="text" class="duration-input" value="${item.duration}" onfocus="this.select()" oninput="handleDurationInput(this, ${index})"></td>`;
-
         html += `<td>
           <select onchange="updateRowData(${index}, 'style', this.value)">
             <option ${item.style==='APERTURA'?'selected':''}>APERTURA</option>
@@ -1242,7 +1163,6 @@
       html += `<td class="no-print" style="text-align:center;">
         <button class="btn btn-danger btn-action" onclick="deleteEditorRow(${index})">✕</button>
       </td>`;
-
       tr.innerHTML = html;
       tbody.appendChild(tr);
     });
@@ -1254,7 +1174,6 @@
   window.handleDurationInput = function(input, index) {
     let digits = input.value.replace(/\D/g, '');
     if (digits.length > 4) digits = digits.slice(-4);
-
     let formatted = '';
     if (digits.length <= 2) {
       formatted = `00:${digits.padStart(2, '0')}`;
@@ -1263,12 +1182,11 @@
     } else {
       formatted = `${digits.slice(0, 2)}:${digits.slice(2)}`;
     }
-
     input.value = formatted;
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
     if (r && r.routine[index]) {
       r.routine[index].duration = formatted;
-      saveDbCloud();
+      window.saveDb();
       updateEditorStatsOnly();
     }
   }
@@ -1276,7 +1194,6 @@
   window.handleTimeInput = function(input) {
     let digits = input.value.replace(/\D/g, '');
     if (digits.length > 4) digits = digits.slice(-4);
-
     let formatted = '';
     if (digits.length <= 2) {
       formatted = digits;
@@ -1285,37 +1202,30 @@
     } else {
       formatted = `${digits.slice(0, 2)}:${digits.slice(2)}`;
     }
-
     input.value = formatted;
   }
 
-  function updateEditorStatsOnly() {
+  window.updateEditorStatsOnly = function() {
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
     if (!r) return;
-    
     let secCount = 0;
     let blockCount = 0;
     let inBlock = false;
-
     (r.routine || []).forEach((item) => {
       if (item.type !== 'tanda') {
         secCount++;
-        if (!inBlock) {
-          blockCount++;
-          inBlock = true;
-        }
+        if (!inBlock) { blockCount++; inBlock = true; }
       } else {
         inBlock = false;
       }
     });
-
     updateEditorStats(blockCount, secCount);
   }
 
   window.updateRowData = function(index, field, val) {
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
     r.routine[index][field] = val;
-    saveDbCloud();
+    window.saveDb();
     if (field === 'style' || field === 'av') renderEditorTable();
   }
 
@@ -1326,14 +1236,14 @@
     } else {
       r.routine.push({ type: 'sec', duration: '05:00', style: 'APERTURA', styleCustom: '', title: 'Nueva Sección', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' });
     }
-    saveDbCloud();
+    window.saveDb();
     renderEditorTable();
   }
 
   window.deleteEditorRow = function(index) {
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
     r.routine.splice(index, 1);
-    saveDbCloud();
+    window.saveDb();
     renderEditorTable();
   }
 
@@ -1345,7 +1255,7 @@
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
     const item = r.routine.splice(sourceIndex, 1)[0];
     r.routine.splice(targetIndex, 0, item);
-    saveDbCloud();
+    window.saveDb();
     renderEditorTable();
   }
 
@@ -1358,7 +1268,7 @@
       r.date = document.getElementById('progDate').value;
       r.hosts = document.getElementById('progHosts').value;
       r.producers = document.getElementById('progProducers').value;
-      saveDbCloud();
+      window.saveDb();
     }
   }
 
@@ -1371,16 +1281,14 @@
       val = `${val.slice(0,2)}/${val.slice(2,4)}/${val.slice(4,8)}`;
       input.value = val;
     }
-    
-    saveCurrentRoutineMeta();
-
+    window.saveCurrentRoutineMeta();
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
     const prog = window.dbState.programs.find(p => p.id === r.programId);
     if (prog && val.length >= 8) {
       const calculatedPgm = calculatePgmNumForDate(prog, val);
       document.getElementById('progNumber').value = calculatedPgm;
       r.pgmNum = calculatedPgm;
-      saveDbCloud();
+      window.saveDb();
     }
   }
 
@@ -1388,7 +1296,7 @@
     if (confirm('¿Vaciar todas las filas de esta rutina?')) {
       const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
       r.routine = [];
-      saveDbCloud();
+      window.saveDb();
       renderEditorTable();
     }
   }
@@ -1405,7 +1313,6 @@
       const m = parseInt(parts[0]) || 0;
       const s = parseInt(parts[1]) || 0;
       const durationInSeconds = (m * 60) + s;
-
       totalSecsWithTanda += durationInSeconds;
       if (item.type !== 'tanda') totalSecsNoTanda += durationInSeconds;
     });
@@ -1417,7 +1324,6 @@
     document.getElementById('statDurTotal').innerText = formatSeconds(totalSecsWithTanda);
   }
 
-  // CÁLCULOS FECHAS Y DÍAS HÁBILES
   window.handleFirstDateInput = function(input) {
     let val = input.value.replace(/\D/g, '');
     if (val.length === 4) {
@@ -1444,20 +1350,14 @@
 
   function calculatePgmNumForDate(prog, dateStr) {
     if (!prog.firstDate || !dateStr) return '001';
-    
     const p1 = prog.firstDate.split('/');
     const d1 = new Date(p1[2], p1[1]-1, p1[0]);
-    
     const p2 = dateStr.split('/');
     const d2 = new Date(p2[2], p2[1]-1, p2[0]);
-
     if (d2 < d1) return '001';
-
     let count = 0;
     let current = new Date(d1);
-    
     const daysList = prog.daysList || [];
-
     while (current <= d2) {
       const dayOfWeek = current.getDay();
       if (daysList.length === 0 || daysList.includes(-1) || daysList.includes(dayOfWeek)) {
@@ -1465,7 +1365,6 @@
       }
       current.setDate(current.getDate() + 1);
     }
-
     return String(Math.max(1, count)).padStart(3, '0');
   }
 
@@ -1473,17 +1372,14 @@
     const parts = lastDateStr.split('/');
     let current = new Date(parts[2], parts[1]-1, parts[0]);
     current.setDate(current.getDate() + 1);
-
     if (!daysList || daysList.length === 0 || daysList.includes(-1)) {
       const d = String(current.getDate()).padStart(2,'0');
       const m = String(current.getMonth()+1).padStart(2,'0');
       return `${d}/${m}/${current.getFullYear()}`;
     }
-
     while (!daysList.includes(current.getDay())) {
       current.setDate(current.getDate() + 1);
     }
-
     const d = String(current.getDate()).padStart(2,'0');
     const m = String(current.getMonth()+1).padStart(2,'0');
     return `${d}/${m}/${current.getFullYear()}`;
@@ -1501,27 +1397,21 @@
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   }
 
-  // EXPORTACIÓN A PDF (INDIVIDUAL Y COMPILADO BATCH)
   window.downloadPDF = function() {
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
     const prog = window.dbState.programs.find(p => p.id === r.programId);
-
     buildPdfDom(r, prog);
-
     const template = document.getElementById('pdfTemplate');
     template.style.display = 'block';
-
     const cleanDate = r.date.replace(/\//g, '-');
     const filename = `${r.name} - ${cleanDate} - RUTINA PGM N° ${r.pgmNum || '001'}.pdf`;
-
     const opt = {
-      margin:       [10, 10, 10, 10],
-      filename:     filename,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2 },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      margin: [10, 10, 10, 10],
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
-
     html2pdf().set(opt).from(template).save().then(() => {
       template.style.display = 'none';
     });
@@ -1534,15 +1424,12 @@
   window.exportBatchPDF = function() {
     const selectedIds = [];
     document.querySelectorAll('.routine-select-cb:checked').forEach(cb => selectedIds.push(cb.value));
-
     if (selectedIds.length === 0) {
-      alert('Por favor seleccioná al menos una rutina con el casillero de verificación.');
+      alert('Por favor seleccioná al menos una rutina.');
       return;
     }
-
     const prog = window.dbState.programs.find(p => p.id === window.activeProgramId);
     const container = document.createElement('div');
-    container.id = 'batchPdfContainer';
     container.style.background = '#ffffff';
     container.style.color = '#000000';
 
@@ -1551,25 +1438,20 @@
       const pageWrapper = document.createElement('div');
       pageWrapper.style.padding = '20px';
       if (index > 0) pageWrapper.style.pageBreakBefore = 'always';
-
       buildPdfDomIntoElement(r, prog, pageWrapper);
       container.appendChild(pageWrapper);
     });
 
     document.body.appendChild(container);
-
     const now = new Date();
-    const timeStr = `${now.toLocaleDateString().replace(/\//g,'-')} ~ ${now.getHours()}-${now.getMinutes()}`;
-    const filename = `${prog.name} - SELECCION DE RUTINAS - ${timeStr}.pdf`;
-
+    const filename = `${prog.name} - SELECCION DE RUTINAS.pdf`;
     const opt = {
-      margin:       [10, 10, 10, 10],
-      filename:     filename,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2 },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      margin: [10, 10, 10, 10],
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
-
     html2pdf().set(opt).from(container).save().then(() => {
       container.remove();
     });
@@ -1584,7 +1466,6 @@
   function buildPdfDomIntoElement(r, prog, parentEl) {
     const dayName = getDayNameFromDate(r.date).toUpperCase();
     const timeText = (prog && prog.timeStart) ? `${prog.timeStart}-${prog.timeEnd} HS` : '';
-    
     let secSecsNoTanda = 0;
     let secSecsTotal = 0;
     let tandasCount = 0;
@@ -1593,7 +1474,6 @@
     (r.routine || []).forEach(item => {
       if (item.type === 'tanda') tandasCount++;
       else secCount++;
-
       const parts = item.duration.split(':');
       const s = (parseInt(parts[0])||0)*60 + (parseInt(parts[1])||0);
       secSecsTotal += s;
@@ -1612,28 +1492,13 @@
         </div>
         ${prog && prog.logo ? `<img src="${prog.logo}" class="pdf-logo">` : ''}
       </div>
-
       <table class="pdf-meta-table">
         <tr>
           <td><span class="pdf-meta-label">FECHA:</span> <span class="pdf-meta-val">${r.date || '-'}</span></td>
           <td><span class="pdf-meta-label">CONDUCCIÓN:</span> <span class="pdf-meta-val">${r.hosts || '-'}</span></td>
           <td><span class="pdf-meta-label">PRODUCCIÓN:</span> <span class="pdf-meta-val">${r.producers || '-'}</span></td>
         </tr>
-        <tr>
-          <td colspan="3" style="padding:0;">
-            <table style="width:100%; border-collapse:collapse;">
-              <tr>
-                <td class="pdf-meta-subtd" style="width:20%; border-right:1px solid #cbd5e1;"><span class="pdf-meta-label">BLOQUES:</span> <span class="pdf-meta-val">${calculateTotalBlocks(r.routine)}</span></td>
-                <td class="pdf-meta-subtd" style="width:20%; border-right:1px solid #cbd5e1;"><span class="pdf-meta-label">TANDAS:</span> <span class="pdf-meta-val">${tandasCount}</span></td>
-                <td class="pdf-meta-subtd" style="width:20%; border-right:1px solid #cbd5e1;"><span class="pdf-meta-label">SECCIONES:</span> <span class="pdf-meta-val">${secCount}</span></td>
-                <td class="pdf-meta-subtd" style="width:20%; border-right:1px solid #cbd5e1;"><span class="pdf-meta-label">DUR. SIN TANDAS:</span> <span class="pdf-meta-val">${formatSeconds(secSecsNoTanda)}</span></td>
-                <td class="pdf-meta-subtd" style="width:20%;"><span class="pdf-meta-label">DUR. TOTAL:</span> <span class="pdf-meta-val">${formatSeconds(secSecsTotal)}</span></td>
-              </tr>
-            </table>
-          </td>
-        </tr>
       </table>
-
       <table class="pdf-table">
         <thead>
           <tr>
@@ -1649,30 +1514,15 @@
           ${generatePdfRowsHtml(r.routine)}
         </tbody>
       </table>
-
       <div class="pdf-footer">
-        RUTINA DE PROGRAMA – ${(r.name || '').toUpperCase()} – ${(r.channel || '').toUpperCase()} – PGM N°${r.pgmNum || '001'} – IMPRESO EL ${timeFormatted}
+        RUTINA DE PROGRAMA – ${(r.name || '').toUpperCase()} – PGM N°${r.pgmNum || '001'} – IMPRESO EL ${timeFormatted}
       </div>
     `;
-  }
-
-  function calculateTotalBlocks(routineData) {
-    let blockCount = 0;
-    let inBlock = false;
-    (routineData || []).forEach(item => {
-      if (item.type !== 'tanda') {
-        if (!inBlock) { blockCount++; inBlock = true; }
-      } else {
-        inBlock = false;
-      }
-    });
-    return blockCount;
   }
 
   function generatePdfRowsHtml(routineData) {
     let secPdfCounter = 1;
     let tandaPdfIndex = 1;
-
     let blockGroups = [];
     let currentBlockNum = 1;
     let currentBlockItemsCount = 0;
@@ -1706,7 +1556,6 @@
         htmlStr += `<td class="pdf-block-tag" style="color:#991b1b; font-size:10px;">TANDA</td>`;
         htmlStr += `<td colspan="4" class="pdf-tanda-title">${tandaTitle}</td>`;
         htmlStr += `<td class="pdf-time-tag" style="color:#991b1b;">${item.duration}</td>`;
-
         groupPointer++;
         rowInGroupCounter = 0;
       } else {
@@ -1714,20 +1563,13 @@
           const group = blockGroups[groupPointer];
           htmlStr += `<td class="pdf-block-tag" rowspan="${group.count}">B${group.blockNum}</td>`;
         }
-
         let styleText = item.style === 'OTRO' ? item.styleCustom : item.style;
         let avText = item.av === 'OTRO' ? item.avCustom : item.av;
 
         htmlStr += `<td class="pdf-sec-tag">${secPdfCounter++}</td>`;
-        htmlStr += `<td>
-          <div class="pdf-title-main">${item.title}</div>
-          <div class="pdf-style-sub">${styleText || ''}</div>
-        </td>`;
+        htmlStr += `<td><div class="pdf-title-main">${item.title}</div><div class="pdf-style-sub">${styleText || ''}</div></td>`;
         htmlStr += `<td style="font-size:10px;">${item.detail || '-'}</td>`;
-        htmlStr += `<td>
-          <div class="pdf-av-main">${avText !== 'NINGUNO' ? avText : '-'}</div>
-          ${item.avNum ? `<div class="pdf-av-num">N°: ${item.avNum}</div>` : ''}
-        </td>`;
+        htmlStr += `<td><div class="pdf-av-main">${avText !== 'NINGUNO' ? avText : '-'}</div>${item.avNum ? `<div class="pdf-av-num">N°: ${item.avNum}</div>` : ''}</td>`;
         htmlStr += `<td class="pdf-time-tag">${item.duration}</td>`;
 
         rowInGroupCounter++;
@@ -1736,14 +1578,11 @@
           groupPointer++;
         }
       }
-
       htmlStr += `</tr>`;
     });
-
     return htmlStr;
   }
 
-  // GESTIÓN DE USUARIOS
   window.openUsersModal = function() {
     renderUsersList();
     document.getElementById('modalUsers').classList.remove('hidden');
@@ -1753,7 +1592,6 @@
   function renderUsersList() {
     const tbody = document.getElementById('usersListBody');
     tbody.innerHTML = '';
-
     const checksDiv = document.getElementById('userFormProgramsCheckboxes');
     checksDiv.innerHTML = '';
     window.dbState.programs.forEach(p => {
@@ -1765,7 +1603,6 @@
     window.dbState.users.forEach(u => {
       const tr = document.createElement('tr');
       const progsCount = (u.assignedPrograms || []).length;
-      
       tr.innerHTML = `
         <td><strong>${u.username}</strong></td>
         <td><span class="user-badge">${u.role.toUpperCase()}</span></td>
@@ -1788,7 +1625,6 @@
       document.getElementById('userFormName').value = u.username;
       document.getElementById('userFormPass').value = u.pass;
       document.getElementById('userFormRole').value = u.role;
-
       document.querySelectorAll('.user-prog-cb').forEach(cb => {
         cb.checked = (u.assignedPrograms || []).includes(cb.value);
       });
@@ -1798,7 +1634,6 @@
   window.handleSaveUser = function(e) {
     e.preventDefault();
     const editId = document.getElementById('userFormId').value;
-    
     const assigned = [];
     document.querySelectorAll('.user-prog-cb:checked').forEach(cb => assigned.push(cb.value));
 
@@ -1815,10 +1650,9 @@
       window.dbState.users[idx] = userData;
     } else {
       window.dbState.users.push(userData);
-      window.dbState.users = Array.from(new Set(window.dbState.users.map(a => a.id))).map(id => window.dbState.users.find(a => a.id === id));
     }
 
-    saveDbCloud();
+    window.saveDb();
     document.getElementById('userFormId').value = '';
     document.getElementById('userFormName').value = '';
     document.getElementById('userFormPass').value = '';
@@ -1828,7 +1662,7 @@
   window.deleteUser = function(userId) {
     if (confirm('¿Eliminar usuario?')) {
       window.dbState.users = window.dbState.users.filter(u => u.id !== userId);
-      saveDbCloud();
+      window.saveDb();
       renderUsersList();
     }
   }
@@ -1838,6 +1672,19 @@
     modal.classList.add('hidden');
     modal.style.display = 'none';
   }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    initFirebaseSync();
+    const savedUsername = localStorage.getItem('sicarp_current_user');
+    if (savedUsername) {
+      setTimeout(() => {
+        const foundUser = window.dbState.users.find(u => u.username.toLowerCase() === savedUsername.toLowerCase());
+        if (foundUser) {
+          initSession(foundUser);
+        }
+      }, 500);
+    }
+  });
 </script>
 </body>
 </html>
