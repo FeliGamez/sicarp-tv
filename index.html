@@ -21,14 +21,14 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-    body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; }
+    body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
     
     .hidden { display: none !important; }
     .flex { display: flex; }
     .items-center { align-items: center; }
     .justify-between { justify-content: space-between; }
     
-    .btn { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; font-size: 0.88rem; transition: background 0.2s; }
+    .btn { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; font-size: 0.88rem; transition: background 0.2s; white-space: nowrap; }
     .btn:hover { background: var(--accent-hover); }
     .btn-secondary { background: #334155; }
     .btn-secondary:hover { background: #475569; }
@@ -59,52 +59,10 @@
     .toggle-password-btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .toggle-password-btn:hover { color: white; }
 
-    td input[type="text"], td select {
-      width: 100%;
-      background: #0f172a;
-      border: 1px solid var(--border-color);
-      color: white;
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      outline: none;
-    }
-    td input[type="text"]:focus, td select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-    }
-
-    .container { max-width: 1350px; margin: 0 auto; padding: 20px; }
-    nav { background: #1e293b; border-bottom: 1px solid var(--border-color); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
-    .nav-brand { font-weight: 800; font-size: 1.25rem; color: #fff; display: flex; align-items: center; gap: 8px; }
-    .nav-brand span { font-size: 0.75rem; background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
-    .nav-user { display: flex; align-items: center; gap: 15px; font-size: 0.85rem; color: var(--text-muted); }
-    .user-badge { background: #0f172a; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); color: #60a5fa; font-weight: 600; }
-
-    .login-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%); }
-    .login-card { background: var(--card-bg); border: 1px solid var(--border-color); width: 100%; max-width: 400px; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-    .login-title { font-size: 1.4rem; font-weight: 800; text-align: center; margin-bottom: 6px; }
-    .login-subtitle { font-size: 0.8rem; text-align: center; color: var(--text-muted); margin-bottom: 24px; }
+    /* CONTENEDOR DE TABLAS CON SCROLL RESPONSIVE EN CELULAR */
+    .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 15px; border-radius: 8px; border: 1px solid var(--border-color); }
     
-    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .section-title { font-size: 1.3rem; font-weight: 700; }
-    
-    .grid-programs { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-    .card-program { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s, border-color 0.2s; }
-    .card-program:hover { border-color: var(--accent); transform: translateY(-2px); }
-    .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-    .card-title { font-size: 1.15rem; font-weight: 700; }
-    .card-channel { font-size: 0.8rem; color: #60a5fa; font-weight: 600; text-transform: uppercase; }
-    .card-logo { max-height: 40px; max-width: 100px; object-fit: contain; }
-    .card-meta { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px; display: flex; flex-direction: column; gap: 4px; }
-    .card-actions { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 12px; }
-
-    .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; }
-    .stats-bar { display: flex; gap: 20px; background: #0f172a; padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; font-weight: 600; font-size: 0.85rem; flex-wrap: wrap; }
-    .stat-item { display: flex; gap: 6px; }
-    .stat-value { color: #60a5fa; font-weight: 700; }
-    
-    table.routine-table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); }
+    table.routine-table { width: 100%; border-collapse: collapse; background: var(--card-bg); min-width: 750px; }
     table.routine-table th, table.routine-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); vertical-align: middle; }
     table.routine-table th { background: #0f172a; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; }
     
@@ -118,43 +76,49 @@
     .av-container { display: flex; flex-direction: column; gap: 4px; }
     .custom-input { margin-top: 4px; }
 
-    .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
-    .modal-content { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 24px; width: 100%; max-width: 550px; }
+    .container { max-width: 1350px; margin: 0 auto; padding: 15px; }
+    
+    /* NAVEGACIÓN ADAPTABLE PARA CELULAR */
+    nav { background: #1e293b; border-bottom: 1px solid var(--border-color); padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .nav-brand { font-weight: 800; font-size: 1.15rem; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .nav-brand span { font-size: 0.75rem; background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
+    .nav-user { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: var(--text-muted); flex-wrap: wrap; }
+    .user-badge { background: #0f172a; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); color: #60a5fa; font-weight: 600; }
+
+    .login-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%); padding: 15px; }
+    .login-card { background: var(--card-bg); border: 1px solid var(--border-color); width: 100%; max-width: 400px; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    .login-title { font-size: 1.4rem; font-weight: 800; text-align: center; margin-bottom: 6px; }
+    .login-subtitle { font-size: 0.8rem; text-align: center; color: var(--text-muted); margin-bottom: 24px; }
+    
+    .section-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .section-title { font-size: 1.2rem; font-weight: 700; }
+    
+    .grid-programs { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 15px; }
+    .card-program { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; }
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .card-title { font-size: 1.1rem; font-weight: 700; }
+    .card-channel { font-size: 0.75rem; color: #60a5fa; font-weight: 600; text-transform: uppercase; }
+    .card-logo { max-height: 35px; max-width: 90px; object-fit: contain; }
+    .card-meta { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px; display: flex; flex-direction: column; gap: 4px; }
+    .card-actions { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 12px; flex-wrap: wrap; gap: 8px; }
+
+    .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; background: var(--card-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; }
+    .stats-bar { display: flex; gap: 15px; background: #0f172a; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; font-weight: 600; font-size: 0.8rem; flex-wrap: wrap; }
+    .stat-item { display: flex; gap: 6px; }
+    .stat-value { color: #60a5fa; font-weight: 700; }
+
+    .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 15px; }
+    .modal-content { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; width: 100%; max-width: 550px; max-height: 90vh; overflow-y: auto; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 
     .days-picker { display: flex; gap: 6px; flex-wrap: wrap; }
-    .day-pill { background: #0f172a; border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; user-select: none; }
+    .day-pill { background: #0f172a; border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; user-select: none; }
     .day-pill.selected { background: var(--accent); border-color: var(--accent); color: white; }
 
     .live-mode input, .live-mode select { pointer-events: none !important; opacity: 0.9; }
     .live-mode .no-print { display: none !important; }
 
     #pdfTemplate { display: none; background: #ffffff; color: #000000; padding: 30px; font-family: 'Inter', sans-serif; }
-    .pdf-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 12px; }
-    .pdf-title-block h1 { font-size: 22px; font-weight: 800; text-transform: uppercase; margin-bottom: 2px; color: #000; line-height: 1.1; }
-    .pdf-title-block h2 { font-size: 12px; color: #475569; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
-    .pdf-title-block p { font-size: 11px; color: #1e293b; font-weight: 800; text-transform: uppercase; }
-    .pdf-logo { max-height: 55px; max-width: 180px; object-fit: contain; }
-
-    .pdf-meta-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 10.5px; border: 1px solid #cbd5e1; background: #ffffff; }
-    .pdf-meta-table td { padding: 5px 8px; border: 1px solid #cbd5e1; }
-    .pdf-meta-label { font-weight: 700; color: #475569; text-transform: uppercase; font-size: 9.5px; }
-    .pdf-meta-val { font-weight: 700; color: #000; }
-
-    .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10.5px; background: #ffffff; }
-    .pdf-table th { background: #000000 !important; color: #ffffff !important; padding: 6px 8px; text-transform: uppercase; font-size: 9px; font-weight: 800; border: 1px solid #000; text-align: left; }
-    .pdf-table td { padding: 7px 8px; border: 1px solid #cbd5e1; vertical-align: middle; color: #000; background: #ffffff; }
-    
-    .pdf-tr-tanda td { background: #fee2e2 !important; border-color: #fca5a5 !important; }
-    .pdf-tanda-title { font-weight: 800; color: #991b1b; text-transform: uppercase; font-size: 10.5px; text-align: center; }
-    .pdf-block-tag { font-weight: 800; font-size: 12px; color: #000000; text-align: center; vertical-align: middle; }
-    .pdf-sec-tag { font-weight: 700; color: #475569; text-align: center; width: 30px; }
-    .pdf-time-tag { font-weight: 700; font-family: monospace; font-size: 11px; text-align: center; width: 65px; }
-    .pdf-title-main { font-weight: 800; font-size: 11px; color: #000000; margin-bottom: 2px; }
-    .pdf-style-sub { font-weight: 600; text-transform: uppercase; font-size: 9px; color: #64748b; }
-    .pdf-av-main { font-size: 10px; font-weight: 700; color: #1e293b; text-transform: uppercase; margin-bottom: 2px; }
-    .pdf-av-num { font-size: 9px; color: #64748b; font-weight: 600; }
-    .pdf-footer { border-top: 2px solid #000; padding-top: 8px; display: flex; justify-content: space-between; font-size: 8.5px; font-weight: 700; color: #334155; text-transform: uppercase; margin-top: 15px; }
   </style>
 </head>
 <body>
@@ -193,16 +157,16 @@
 
 <nav id="appHeader" class="hidden">
   <div class="nav-brand">
-    SiCARP-TV <span>v1.0</span>
+    SiCARP-TV <span>v2.0</span>
   </div>
   <div class="nav-user">
     <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; background: #0f172a; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color);">
       <div id="syncDot" style="width: 8px; height: 8px; border-radius: 50%; background: #eab308;"></div>
       <span id="syncText">Conectando...</span>
     </div>
-    <button id="btnNavUsers" class="btn btn-secondary btn-sm hidden" onclick="openUsersModal()">👥 Gestionar Usuarios</button>
-    <div>Usuario: <span id="navUsername" class="user-badge">Admin</span></div>
-    <button class="btn btn-danger btn-sm" onclick="logout()">Cerrar Sesión</button>
+    <button id="btnNavUsers" class="btn btn-secondary btn-sm hidden" onclick="openUsersModal()">👥 Usuarios</button>
+    <div><span id="navUsername" class="user-badge">Admin</span></div>
+    <button class="btn btn-danger btn-sm" onclick="logout()">Salir</button>
   </div>
 </nav>
 
@@ -211,9 +175,9 @@
     <div class="section-header">
       <div>
         <div class="section-title">Programas de Televisión</div>
-        <div style="font-size: 0.85rem; color: var(--text-muted);">Seleccioná un programa para ver o crear sus escaletas</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted);">Seleccioná un programa para ver sus escaletas</div>
       </div>
-      <button id="btnNewProgram" class="btn" onclick="openProgramModal()">➕ Crear Nuevo Programa</button>
+      <button id="btnNewProgram" class="btn" onclick="openProgramModal()">➕ Nuevo Programa</button>
     </div>
     <div class="grid-programs" id="programsGrid"></div>
   </div>
@@ -225,42 +189,42 @@
     <div class="section-header">
       <div>
         <div class="section-title" id="routineListProgTitle">Nombre Programa</div>
-        <div style="font-size: 0.85rem; color: var(--text-muted);" id="routineListProgSub">Emisiones y Escaletas históricas</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted);" id="routineListProgSub">Emisiones históricas</div>
       </div>
-      <div style="display: flex; gap: 8px;">
-        <button id="btnExportSelectedPDF" class="btn btn-secondary" onclick="exportBatchPDF()">📄 Exportar Selección a PDF</button>
-        <button id="btnNewRoutine" class="btn btn-success" onclick="openNewRoutineDialog()">➕ Crear Nueva Rutina</button>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button id="btnExportSelectedPDF" class="btn btn-secondary btn-sm" onclick="exportBatchPDF()">📄 Exportar PDF</button>
+        <button id="btnNewRoutine" class="btn btn-success btn-sm" onclick="openNewRoutineDialog()">➕ Nueva Rutina</button>
       </div>
     </div>
-    <table class="routine-table">
-      <thead>
-        <tr>
-          <th style="width: 30px; text-align: center;"><input type="checkbox" onchange="toggleSelectAllRoutines(this)"></th>
-          <th style="width: 90px; text-align: center;">PGM N°</th>
-          <th style="width: 140px;">FECHA / DÍA</th>
-          <th>DURACIÓN TOTAL</th>
-          <th>CONDUCTORES</th>
-          <th>PRODUCCIÓN</th>
-          <th style="width: 150px; text-align: center;">ACCIONES</th>
-        </tr>
-      </thead>
-      <tbody id="routinesListBody"></tbody>
-    </table>
+    <div class="table-responsive">
+      <table class="routine-table">
+        <thead>
+          <tr>
+            <th style="width: 30px; text-align: center;"><input type="checkbox" onchange="toggleSelectAllRoutines(this)"></th>
+            <th style="width: 80px; text-align: center;">PGM N°</th>
+            <th style="width: 130px;">FECHA / DÍA</th>
+            <th>DURACIÓN</th>
+            <th>CONDUCTORES</th>
+            <th>PRODUCCIÓN</th>
+            <th style="width: 130px; text-align: center;">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody id="routinesListBody"></tbody>
+      </table>
+    </div>
   </div>
 
   <div id="viewRoutineEditor" class="hidden">
-    <div style="margin-bottom: 15px; display: flex; justify-content: space-between;">
-      <button class="btn btn-secondary btn-sm" onclick="navToRoutinesList(activeProgramId)">← Volver a Rutinas del Programa</button>
-      <div style="display: flex; gap: 8px;">
-        <button id="btnEditorExportPDF" class="btn btn-success" onclick="downloadPDF()">📄 Descargar PDF Oficial</button>
-      </div>
+    <div style="margin-bottom: 15px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+      <button class="btn btn-secondary btn-sm" onclick="navToRoutinesList(activeProgramId)">← Volver a Rutinas</button>
+      <button id="btnEditorExportPDF" class="btn btn-success btn-sm" onclick="downloadPDF()">📄 Descargar PDF Oficial</button>
     </div>
 
     <div class="meta-grid" id="editorMetaGrid">
-      <div class="field"><label>Canal / Medio</label><input type="text" id="progChannel" onfocus="this.select()" oninput="saveCurrentRoutineMeta()"></div>
-      <div class="field"><label>Nombre del Programa</label><input type="text" id="progName" onfocus="this.select()" oninput="saveCurrentRoutineMeta()"></div>
+      <div class="field"><label>Canal</label><input type="text" id="progChannel" onfocus="this.select()" oninput="saveCurrentRoutineMeta()"></div>
+      <div class="field"><label>Programa</label><input type="text" id="progName" onfocus="this.select()" oninput="saveCurrentRoutineMeta()"></div>
       <div class="field"><label>PGM N°</label><input type="text" id="progNumber" onfocus="this.select()" oninput="saveCurrentRoutineMeta()"></div>
-      <div class="field"><label>Fecha de Emisión</label><input type="text" id="progDate" placeholder="DD/MM/AAAA" onfocus="this.select()" oninput="handleEditorDateInput(this)"></div>
+      <div class="field"><label>Fecha</label><input type="text" id="progDate" placeholder="DD/MM/AAAA" onfocus="this.select()" oninput="handleEditorDateInput(this)"></div>
       <div class="field"><label>Conducción</label><input type="text" id="progHosts" onfocus="this.select()" oninput="saveCurrentRoutineMeta()"></div>
       <div class="field"><label>Producción</label><input type="text" id="progProducers" onfocus="this.select()" oninput="saveCurrentRoutineMeta()"></div>
     </div>
@@ -269,34 +233,36 @@
       <div class="stat-item">Secciones: <span class="stat-value" id="statSecs">0</span></div>
       <div class="stat-item">Tandas: <span class="stat-value" id="statTandas">0</span></div>
       <div class="stat-item">Bloques: <span class="stat-value" id="statBlocks">0</span></div>
-      <div class="stat-item">Duración sin Tandas: <span class="stat-value" id="statDurNoTanda">00:00</span></div>
-      <div class="stat-item">Duración TOTAL: <span class="stat-value" id="statDurTotal">00:00</span></div>
+      <div class="stat-item">Sin Tandas: <span class="stat-value" id="statDurNoTanda">00:00</span></div>
+      <div class="stat-item">TOTAL: <span class="stat-value" id="statDurTotal">00:00</span></div>
     </div>
 
-    <div class="actions-bar no-print" style="margin-bottom: 15px; display: flex; justify-content: space-between;">
-      <div style="display: flex; gap: 8px;">
-        <button class="btn" onclick="addRow('sec')">➕ Agregar Sección</button>
-        <button class="btn btn-danger" onclick="addRow('tanda')">📺 Agregar Tanda</button>
+    <div class="actions-bar no-print" style="margin-bottom: 15px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="btn btn-sm" onclick="addRow('sec')">➕ Sección</button>
+        <button class="btn btn-danger btn-sm" onclick="addRow('tanda')">📺 Tanda</button>
       </div>
-      <button class="btn btn-secondary" onclick="resetRoutineData()">🗑️ Vaciar Rutina</button>
+      <button class="btn btn-secondary btn-sm" onclick="resetRoutineData()">🗑️ Vaciar</button>
     </div>
 
-    <table class="routine-table" id="editorTable">
-      <thead>
-        <tr>
-          <th class="no-print" style="width: 30px;"></th>
-          <th style="width: 45px;">N°</th>
-          <th style="width: 65px;">Bloque</th>
-          <th style="width: 80px;">Duración</th>
-          <th style="width: 130px;">Estilo</th>
-          <th>Título de la Sección / Nota</th>
-          <th>Detalle / Explicación</th>
-          <th style="width: 170px;">Soporte AV & N° Archivo</th>
-          <th class="no-print" style="width: 40px;"></th>
-        </tr>
-      </thead>
-      <tbody id="routineBody"></tbody>
-    </table>
+    <div class="table-responsive">
+      <table class="routine-table" id="editorTable">
+        <thead>
+          <tr>
+            <th class="no-print" style="width: 30px;"></th>
+            <th style="width: 45px;">N°</th>
+            <th style="width: 65px;">Bloque</th>
+            <th style="width: 80px;">Duración</th>
+            <th style="width: 120px;">Estilo</th>
+            <th>Título / Nota</th>
+            <th>Detalle</th>
+            <th style="width: 160px;">Soporte AV</th>
+            <th class="no-print" style="width: 40px;"></th>
+          </tr>
+        </thead>
+        <tbody id="routineBody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -314,17 +280,17 @@
         <label>Logo del Programa</label>
         <input type="file" id="progFormLogoInput" accept="image/*" onchange="handleProgramLogoUpload(event)">
         <div id="progFormLogoPreviewContainer" style="display:none; align-items:center; gap:10px; margin-top:8px;">
-          <img id="progFormLogoPreview" style="max-height: 50px;" alt="Preview Logo">
-          <button type="button" class="btn btn-danger btn-sm" onclick="removeProgramLogo()">Quitar Logo</button>
+          <img id="progFormLogoPreview" style="max-height: 40px;" alt="Logo">
+          <button type="button" class="btn btn-danger btn-sm" onclick="removeProgramLogo()">Quitar</button>
         </div>
       </div>
-      <div style="display: flex; gap: 10px;">
-        <div class="form-group" style="flex: 1;"><label>Conducción Predeterminada</label><input type="text" id="progFormHosts"></div>
-        <div class="form-group" style="flex: 1;"><label>Producción Predeterminada</label><input type="text" id="progFormProducers"></div>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <div class="form-group" style="flex: 1; min-width: 140px;"><label>Conducción</label><input type="text" id="progFormHosts"></div>
+        <div class="form-group" style="flex: 1; min-width: 140px;"><label>Producción</label><input type="text" id="progFormProducers"></div>
       </div>
-      <div style="display: flex; gap: 10px;">
-        <div class="form-group" style="flex: 1;"><label>Fecha 1ª Emisión (DD/MM/AAAA)</label><input type="text" id="progFormFirstDate" placeholder="DD/MM/AAAA" oninput="handleFirstDateInput(this)" required></div>
-        <div class="form-group" style="flex: 1;">
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <div class="form-group" style="flex: 1; min-width: 140px;"><label>1ª Emisión (DD/MM/AAAA)</label><input type="text" id="progFormFirstDate" placeholder="DD/MM/AAAA" oninput="handleFirstDateInput(this)" required></div>
+        <div class="form-group" style="flex: 1; min-width: 140px;">
           <label>Horario (Desde - Hasta)</label>
           <div style="display:flex; gap:4px;">
             <input type="text" id="progFormTimeStart" placeholder="15:00" oninput="handleTimeInput(this)">
@@ -333,7 +299,7 @@
         </div>
       </div>
       <div class="form-group">
-        <label>Días Habituales de Emisión</label>
+        <label>Días de Emisión</label>
         <div class="days-picker" id="daysPicker">
           <div class="day-pill" data-day="1" onclick="toggleDayPill(this)">L</div>
           <div class="day-pill" data-day="2" onclick="toggleDayPill(this)">M</div>
@@ -347,7 +313,7 @@
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
         <button type="button" class="btn btn-secondary" onclick="closeModal('modalProgram')">Cancelar</button>
-        <button type="submit" class="btn btn-success">Guardar Programa</button>
+        <button type="submit" class="btn btn-success">Guardar</button>
       </div>
     </form>
   </div>
@@ -356,12 +322,12 @@
 <div id="modalUsers" class="modal-backdrop hidden">
   <div class="modal-content" style="max-width: 650px;">
     <div class="modal-header">
-      <div style="font-weight: 700; font-size: 1.1rem;">Gestión de Usuarios y Permisos</div>
+      <div style="font-weight: 700; font-size: 1.1rem;">Gestión de Usuarios</div>
       <button class="btn btn-secondary btn-sm" onclick="closeModal('modalUsers')">✕</button>
     </div>
     <form onsubmit="handleSaveUser(event)" style="background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
       <input type="hidden" id="userFormId">
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
         <div class="form-group" style="margin-bottom:0;"><label>Usuario</label><input type="text" id="userFormName" required></div>
         <div class="form-group" style="margin-bottom:0;"><label>Contraseña</label><input type="text" id="userFormPass" required></div>
         <div class="form-group" style="margin-bottom:0;">
@@ -379,60 +345,32 @@
       </div>
       <button type="submit" class="btn btn-sm btn-success" style="margin-top: 10px; width: 100%; justify-content: center;">Guardar Usuario</button>
     </form>
-    <table class="routine-table">
-      <thead>
-        <tr><th>USUARIO</th><th>ROL</th><th>PROGRAMAS</th><th style="width: 80px; text-align: center;">ACCIONES</th></tr>
-      </thead>
-      <tbody id="usersListBody"></tbody>
-    </table>
+    <div class="table-responsive">
+      <table class="routine-table">
+        <thead>
+          <tr><th>USUARIO</th><th>ROL</th><th>PROGRAMAS</th><th style="width: 70px; text-align: center;">ACCIONES</th></tr>
+        </thead>
+        <tbody id="usersListBody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
 <div id="modalNewRoutine" class="modal-backdrop hidden">
   <div class="modal-content" style="max-width: 420px; text-align: center;">
     <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 10px;">Crear Nueva Rutina</div>
-    <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">¿Cómo querés inicializar la estructura de esta nueva emisión?</div>
+    <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">¿Cómo querés inicializar la estructura?</div>
     <div style="display: flex; flex-direction: column; gap: 10px;">
-      <button class="btn btn-secondary" style="justify-content: center; padding: 12px;" onclick="createNewRoutine(true)">📋 Duplicar la última rutina emitida</button>
-      <button class="btn" style="justify-content: center; padding: 12px;" onclick="createNewRoutine(false)">✨ Empezar de cero (100% limpia)</button>
+      <button class="btn btn-secondary" style="justify-content: center; padding: 12px;" onclick="createNewRoutine(true)">📋 Duplicar última rutina</button>
+      <button class="btn" style="justify-content: center; padding: 12px;" onclick="createNewRoutine(false)">✨ Empezar de cero</button>
     </div>
     <button class="btn btn-secondary btn-sm" style="margin-top: 15px;" onclick="closeModal('modalNewRoutine')">Cancelar</button>
   </div>
 </div>
 
-<div id="pdfTemplate">
-  <div class="pdf-header">
-    <div class="pdf-title-block">
-      <h1 id="pdfProgName">PROGRAMA EN VIVO</h1>
-      <h2 id="pdfProgChannel">CANAL</h2>
-      <p id="pdfPgmNum">RUTINA PGM-001</p>
-    </div>
-    <img id="pdfLogo" class="pdf-logo" style="display:none;" alt="Logo">
-  </div>
-  <table class="pdf-meta-table">
-    <tr>
-      <td><span class="pdf-meta-label">FECHA:</span> <span class="pdf-meta-val" id="pdfProgDate">01/11/2026</span></td>
-      <td><span class="pdf-meta-label">CONDUCCIÓN:</span> <span class="pdf-meta-val" id="pdfProgHosts">-</span></td>
-      <td><span class="pdf-meta-label">PRODUCCIÓN:</span> <span class="pdf-meta-val" id="pdfProgProducers">-</span></td>
-    </tr>
-  </table>
-  <table class="pdf-table">
-    <thead>
-      <tr>
-        <th style="width: 45px; text-align: center;">BLOQUE</th>
-        <th style="width: 30px; text-align: center;">N°</th>
-        <th>TÍTULO / ESTILO</th>
-        <th>DETALLE / NOTAS DE PISO</th>
-        <th style="width: 120px;">APOYO AV / N°</th>
-        <th style="width: 60px; text-align: center;">TIEMPO</th>
-      </tr>
-    </thead>
-    <tbody id="pdfTableBody"></tbody>
-  </table>
-  <div class="pdf-footer" id="pdfFooterText">RUTINA DE PROGRAMA</div>
-</div>
+<div id="pdfTemplate"></div>
 
-<!-- NÚCLEO DE CONEXIÓN DIRECTA A REALTIME DATABASE (SIN AUTH RESTRINGIDA) -->
+<!-- NÚCLEO DE CONEXIÓN FIREBASE (REGLAS PÚBLICAS) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
   import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
@@ -644,7 +582,7 @@
     
     const prog = window.dbState.programs.find(p => p.id === progId);
     document.getElementById('routineListProgTitle').innerText = prog.name;
-    document.getElementById('routineListProgSub').innerText = `${prog.channel} | Emisiones cargadas`;
+    document.getElementById('routineListProgSub').innerText = `${prog.channel} | Emisiones`;
     
     if (window.currentUser.role === 'conduccion') {
       document.getElementById('btnNewRoutine').classList.add('hidden');
@@ -691,7 +629,7 @@
     }
 
     if (allowedProgs.length === 0) {
-      grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-color);">No tenés programas asignados o disponibles.</div>`;
+      grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 30px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-color);">No tenés programas asignados.</div>`;
       return;
     }
 
@@ -710,9 +648,9 @@
           ${p.logo ? `<img src="${p.logo}" class="card-logo">` : ''}
         </div>
         <div class="card-meta">
-          <div>🗓️ <strong>Días:</strong> ${daysText}</div>
-          <div>⏰ <strong>Horario:</strong> ${timeText}</div>
-          <div>🎬 <strong>1ª Emisión:</strong> ${p.firstDate || '-'}</div>
+          <div>🗓️ ${daysText}</div>
+          <div>⏰ ${timeText}</div>
+          <div>🎬 1ª Emisión: ${p.firstDate || '-'}</div>
         </div>
         <div class="card-actions">
           <button class="btn btn-sm" onclick="navToRoutinesList('${p.id}')">Ver Rutinas →</button>
@@ -735,7 +673,7 @@
     const progtines = window.dbState.routines.filter(r => r.programId === window.activeProgramId);
     
     if (progtines.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:20px;">No hay rutinas creadas para este programa aún.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:20px;">No hay rutinas creadas.</td></tr>`;
       return;
     }
 
@@ -753,7 +691,7 @@
       tr.innerHTML = `
         <td style="text-align:center;"><input type="checkbox" class="routine-select-cb" value="${r.id}"></td>
         <td style="text-align:center; font-weight:700; color:#60a5fa;">PGM-${r.pgmNum}</td>
-        <td><strong>${r.date}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(${dayName})</span></td>
+        <td><strong>${r.date}</strong> <span style="font-size:0.7rem; color:var(--text-muted);">(${dayName})</span></td>
         <td style="font-family:monospace; font-weight:700;">${durTotal}</td>
         <td>${r.hosts || '-'}</td>
         <td>${r.producers || '-'}</td>
@@ -890,7 +828,7 @@
   }
 
   window.deleteProgram = function(progId) {
-    if (confirm('¿Seguro que querés eliminar este programa y todas sus rutinas?')) {
+    if (confirm('¿Eliminar programa y rutinas?')) {
       window.dbState.programs = window.dbState.programs.filter(p => p.id !== progId);
       window.dbState.routines = window.dbState.routines.filter(r => r.programId !== progId);
       window.saveDb();
@@ -946,7 +884,7 @@
   }
 
   window.deleteRoutine = function(routineId) {
-    if (confirm('¿Eliminar esta rutina?')) {
+    if (confirm('¿Eliminar rutina?')) {
       window.dbState.routines = window.dbState.routines.filter(r => r.id !== routineId);
       window.saveDb();
       renderRoutinesList();
@@ -1179,7 +1117,7 @@
   }
 
   window.resetRoutineData = function() {
-    if (confirm('¿Vaciar todas las filas de esta rutina?')) {
+    if (confirm('¿Vaciar rutina?')) {
       const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
       r.routine = [];
       window.saveDb();
@@ -1311,7 +1249,7 @@
     const selectedIds = [];
     document.querySelectorAll('.routine-select-cb:checked').forEach(cb => selectedIds.push(cb.value));
     if (selectedIds.length === 0) {
-      alert('Por favor seleccioná al menos una rutina.');
+      alert('Seleccioná al menos una rutina.');
       return;
     }
     const prog = window.dbState.programs.find(p => p.id === window.activeProgramId);
@@ -1355,38 +1293,40 @@
     const timeFormatted = `${now.toLocaleDateString()} A LAS ${now.toLocaleTimeString()} HS`;
 
     parentEl.innerHTML = `
-      <div class="pdf-header">
-        <div class="pdf-title-block">
-          <h1>${(r.name || 'PROGRAMA').toUpperCase()}</h1>
-          <h2>${(r.channel || 'CANAL').toUpperCase()}</h2>
-          <p>RUTINA PGM-${r.pgmNum || '001'} (${dayName} ${timeText})</p>
+      <div style="font-family:'Inter', sans-serif;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:12px;">
+          <div>
+            <h1 style="font-size:22px; font-weight:800; text-transform:uppercase; margin-bottom:2px; color:#000;">${(r.name || 'PROGRAMA').toUpperCase()}</h1>
+            <h2 style="font-size:12px; color:#475569; font-weight:700; text-transform:uppercase; margin-bottom:4px;">${(r.channel || 'CANAL').toUpperCase()}</h2>
+            <p style="font-size:11px; color:#1e293b; font-weight:800; text-transform:uppercase;">RUTINA PGM-${r.pgmNum || '001'} (${dayName} ${timeText})</p>
+          </div>
+          ${prog && prog.logo ? `<img src="${prog.logo}" style="max-height:55px; max-width:180px; object-fit:contain;">` : ''}
         </div>
-        ${prog && prog.logo ? `<img src="${prog.logo}" class="pdf-logo">` : ''}
-      </div>
-      <table class="pdf-meta-table">
-        <tr>
-          <td><span class="pdf-meta-label">FECHA:</span> <span class="pdf-meta-val">${r.date || '-'}</span></td>
-          <td><span class="pdf-meta-label">CONDUCCIÓN:</span> <span class="pdf-meta-val">${r.hosts || '-'}</span></td>
-          <td><span class="pdf-meta-label">PRODUCCIÓN:</span> <span class="pdf-meta-val">${r.producers || '-'}</span></td>
-        </tr>
-      </table>
-      <table class="pdf-table">
-        <thead>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:15px; font-size:10.5px; border:1px solid #cbd5e1;">
           <tr>
-            <th style="width: 45px; text-align: center;">BLOQUE</th>
-            <th style="width: 30px; text-align: center;">N°</th>
-            <th>TÍTULO / ESTILO</th>
-            <th>DETALLE / NOTAS DE PISO</th>
-            <th style="width: 120px;">APOYO AV / N°</th>
-            <th style="width: 60px; text-align: center;">TIEMPO</th>
+            <td style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">FECHA:</strong> ${r.date || '-'}</td>
+            <td style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">CONDUCCIÓN:</strong> ${r.hosts || '-'}</td>
+            <td style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">PRODUCCIÓN:</strong> ${r.producers || '-'}</td>
           </tr>
-        </thead>
-        <tbody>
-          ${generatePdfRowsHtml(r.routine)}
-        </tbody>
-      </table>
-      <div class="pdf-footer">
-        RUTINA DE PROGRAMA – ${(r.name || '').toUpperCase()} – PGM N°${r.pgmNum || '001'} – IMPRESO EL ${timeFormatted}
+        </table>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:10.5px;">
+          <thead>
+            <tr>
+              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:45px;">BLOQUE</th>
+              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:30px;">N°</th>
+              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:left;">TÍTULO / ESTILO</th>
+              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:left;">DETALLE / NOTAS</th>
+              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:left; width:120px;">APOYO AV / N°</th>
+              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:60px;">TIEMPO</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${generatePdfRowsHtml(r.routine)}
+          </tbody>
+        </table>
+        <div style="border-top:2px solid #000; padding-top:8px; display:flex; justify-content:space-between; font-size:8.5px; font-weight:700; color:#334155; text-transform:uppercase;">
+          RUTINA DE PROGRAMA – ${(r.name || '').toUpperCase()} – PGM N°${r.pgmNum || '001'} – IMPRESO EL ${timeFormatted}
+        </div>
       </div>
     `;
   }
@@ -1420,28 +1360,28 @@
 
     (routineData || []).forEach((item) => {
       const isTanda = item.type === 'tanda';
-      htmlStr += `<tr class="${isTanda ? 'pdf-tr-tanda' : ''}">`;
+      htmlStr += `<tr style="${isTanda ? 'background:#fee2e2 !important;' : ''}">`;
 
       if (isTanda) {
         const tandaTitle = `TANDA COMERCIAL N°${tandaPdfIndex++}`;
-        htmlStr += `<td class="pdf-block-tag" style="color:#991b1b; font-size:10px;">TANDA</td>`;
-        htmlStr += `<td colspan="4" class="pdf-tanda-title">${tandaTitle}</td>`;
-        htmlStr += `<td class="pdf-time-tag" style="color:#991b1b;">${item.duration}</td>`;
+        htmlStr += `<td style="font-weight:800; font-size:10px; color:#991b1b; text-align:center; border:1px solid #fca5a5;">TANDA</td>`;
+        htmlStr += `<td colspan="4" style="font-weight:800; color:#991b1b; text-transform:uppercase; font-size:10.5px; text-align:center; border:1px solid #fca5a5;">${tandaTitle}</td>`;
+        htmlStr += `<td style="font-weight:700; font-family:monospace; font-size:11px; text-align:center; color:#991b1b; border:1px solid #fca5a5;">${item.duration}</td>`;
         groupPointer++;
         rowInGroupCounter = 0;
       } else {
         if (rowInGroupCounter === 0) {
           const group = blockGroups[groupPointer];
-          htmlStr += `<td class="pdf-block-tag" rowspan="${group.count}">B${group.blockNum}</td>`;
+          htmlStr += `<td style="font-weight:800; font-size:12px; color:#000; text-align:center; vertical-align:middle; border:1px solid #cbd5e1;" rowspan="${group.count}">B${group.blockNum}</td>`;
         }
         let styleText = item.style === 'OTRO' ? item.styleCustom : item.style;
         let avText = item.av === 'OTRO' ? item.avCustom : item.av;
 
-        htmlStr += `<td class="pdf-sec-tag">${secPdfCounter++}</td>`;
-        htmlStr += `<td><div class="pdf-title-main">${item.title}</div><div class="pdf-style-sub">${styleText || ''}</div></td>`;
-        htmlStr += `<td style="font-size:10px;">${item.detail || '-'}</td>`;
-        htmlStr += `<td><div class="pdf-av-main">${avText !== 'NINGUNO' ? avText : '-'}</div>${item.avNum ? `<div class="pdf-av-num">N°: ${item.avNum}</div>` : ''}</td>`;
-        htmlStr += `<td class="pdf-time-tag">${item.duration}</td>`;
+        htmlStr += `<td style="font-weight:700; color:#475569; text-align:center; border:1px solid #cbd5e1;">${secPdfCounter++}</td>`;
+        htmlStr += `<td style="border:1px solid #cbd5e1; padding:7px 8px;"><div style="font-weight:800; font-size:11px; color:#000;">${item.title}</div><div style="font-weight:600; text-transform:uppercase; font-size:9px; color:#64748b;">${styleText || ''}</div></td>`;
+        htmlStr += `<td style="border:1px solid #cbd5e1; font-size:10px; padding:7px 8px;">${item.detail || '-'}</td>`;
+        htmlStr += `<td style="border:1px solid #cbd5e1; padding:7px 8px;"><div style="font-size:10px; font-weight:700; color:#1e293b; text-transform:uppercase;">${avText !== 'NINGUNO' ? avText : '-'}</div>${item.avNum ? `<div style="font-size:9px; color:#64748b; font-weight:600;">N°: ${item.avNum}</div>` : ''}</td>`;
+        htmlStr += `<td style="font-weight:700; font-family:monospace; font-size:11px; text-align:center; border:1px solid #cbd5e1;">${item.duration}</td>`;
 
         rowInGroupCounter++;
         if (rowInGroupCounter >= blockGroups[groupPointer].count) {
@@ -1477,7 +1417,7 @@
       tr.innerHTML = `
         <td><strong>${u.username}</strong></td>
         <td><span class="user-badge">${u.role.toUpperCase()}</span></td>
-        <td>${u.role==='admin' ? 'Todos' : (progsCount > 0 ? `${progsCount} Asignados` : 'Ninguno')}</td>
+        <td>${u.role==='admin' ? 'Todos' : (progsCount > 0 ? `${progsCount} Asig.` : 'Ninguno')}</td>
         <td style="text-align:center;">
           <div style="display:flex; gap:4px; justify-content:center;">
             <button class="btn btn-secondary btn-sm" onclick="editUser('${u.id}')">✏️</button>
