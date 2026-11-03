@@ -157,7 +157,7 @@
 
 <nav id="appHeader" class="hidden">
   <div class="nav-brand">
-    SiCARP-TV <span>v2.0</span>
+    SiCARP-TV <span>v2.1</span>
   </div>
   <div class="nav-user">
     <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; background: #0f172a; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color);">
@@ -1288,9 +1288,40 @@
 
   function buildPdfDomIntoElement(r, prog, parentEl) {
     const dayName = getDayNameFromDate(r.date).toUpperCase();
-    const timeText = (prog && prog.timeStart) ? `${prog.timeStart}-${prog.timeEnd} HS` : '';
+    const timeText = (prog && prog.timeStart && prog.timeEnd) ? `${prog.timeStart}-${prog.timeEnd} HS` : (prog && prog.timeStart ? `${prog.timeStart} HS` : '');
+    const scheduleStr = dayName ? `${dayName}${timeText ? ' ' + timeText : ''}` : timeText;
     const now = new Date();
     const timeFormatted = `${now.toLocaleDateString()} A LAS ${now.toLocaleTimeString()} HS`;
+
+    let tandasCount = 0;
+    let secCount = 0;
+    let blockCount = 0;
+    let inBlock = false;
+    let totalSecsNoTanda = 0;
+    let totalSecsWithTanda = 0;
+
+    (r.routine || []).forEach((item) => {
+      const parts = item.duration ? item.duration.split(':') : ['0','0'];
+      const m = parseInt(parts[0]) || 0;
+      const s = parseInt(parts[1]) || 0;
+      const durationInSeconds = (m * 60) + s;
+      totalSecsWithTanda += durationInSeconds;
+
+      if (item.type === 'tanda') {
+        tandasCount++;
+        inBlock = false;
+      } else {
+        secCount++;
+        totalSecsNoTanda += durationInSeconds;
+        if (!inBlock) {
+          blockCount++;
+          inBlock = true;
+        }
+      }
+    });
+
+    const durNoTandaStr = formatSeconds(totalSecsNoTanda);
+    const durTotalStr = formatSeconds(totalSecsWithTanda);
 
     parentEl.innerHTML = `
       <div style="font-family:'Inter', sans-serif;">
@@ -1298,15 +1329,24 @@
           <div>
             <h1 style="font-size:22px; font-weight:800; text-transform:uppercase; margin-bottom:2px; color:#000;">${(r.name || 'PROGRAMA').toUpperCase()}</h1>
             <h2 style="font-size:12px; color:#475569; font-weight:700; text-transform:uppercase; margin-bottom:4px;">${(r.channel || 'CANAL').toUpperCase()}</h2>
-            <p style="font-size:11px; color:#1e293b; font-weight:800; text-transform:uppercase;">RUTINA PGM-${r.pgmNum || '001'} (${dayName} ${timeText})</p>
+            <p style="font-size:11px; color:#1e293b; font-weight:800; text-transform:uppercase;">RUTINA PGM-${r.pgmNum || '001'}${scheduleStr ? ` (${scheduleStr})` : ''}</p>
           </div>
           ${prog && prog.logo ? `<img src="${prog.logo}" style="max-height:55px; max-width:180px; object-fit:contain;">` : ''}
         </div>
         <table style="width:100%; border-collapse:collapse; margin-bottom:15px; font-size:10.5px; border:1px solid #cbd5e1;">
           <tr>
-            <td style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">FECHA:</strong> ${r.date || '-'}</td>
-            <td style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">CONDUCCIÓN:</strong> ${r.hosts || '-'}</td>
+            <td style="padding:5px 8px; border:1px solid #cbd5e1; width:33%;"><strong style="color:#475569; font-size:9.5px;">FECHA:</strong> ${r.date || '-'}</td>
+            <td style="padding:5px 8px; border:1px solid #cbd5e1; width:33%;"><strong style="color:#475569; font-size:9.5px;">BLOQUES:</strong> ${blockCount}</td>
+            <td style="padding:5px 8px; border:1px solid #cbd5e1; width:34%;"><strong style="color:#475569; font-size:9.5px;">CONDUCCIÓN:</strong> ${r.hosts || '-'}</td>
+          </tr>
+          <tr>
+            <td style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">TANDAS:</strong> ${tandasCount}</td>
+            <td style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">SECCIONES:</strong> ${secCount}</td>
             <td style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">PRODUCCIÓN:</strong> ${r.producers || '-'}</td>
+          </tr>
+          <tr>
+            <td colspan="2" style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">DUR. SIN TANDAS:</strong> <span style="font-weight:700;">${durNoTandaStr}</span></td>
+            <td style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">DUR. TOTAL:</strong> <span style="font-weight:700;">${durTotalStr}</span></td>
           </tr>
         </table>
         <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:10.5px;">
@@ -1325,7 +1365,7 @@
           </tbody>
         </table>
         <div style="border-top:2px solid #000; padding-top:8px; display:flex; justify-content:space-between; font-size:8.5px; font-weight:700; color:#334155; text-transform:uppercase;">
-          RUTINA DE PROGRAMA – ${(r.name || '').toUpperCase()} – PGM N°${r.pgmNum || '001'} – IMPRESO EL ${timeFormatted}
+          RUTINA DE PROGRAMA – ${(r.name || '').toUpperCase()} ${(r.channel || '').toUpperCase()} – PGM N°${r.pgmNum || '001'} – IMPRESO EL ${timeFormatted}
         </div>
       </div>
     `;
