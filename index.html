@@ -48,6 +48,12 @@
       width: 100%;
       outline: none;
     }
+    textarea {
+      resize: vertical;
+      min-height: 42px;
+      line-height: 1.3;
+      font-family: inherit;
+    }
     input:focus, select:focus, textarea:focus { border-color: var(--accent); }
     
     .form-group { margin-bottom: 14px; }
@@ -62,7 +68,7 @@
     /* CONTENEDOR DE TABLAS CON SCROLL RESPONSIVE EN CELULAR */
     .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 15px; border-radius: 8px; border: 1px solid var(--border-color); }
     
-    table.routine-table { width: 100%; border-collapse: collapse; background: var(--card-bg); min-width: 750px; }
+    table.routine-table { width: 100%; border-collapse: collapse; background: var(--card-bg); min-width: 820px; }
     table.routine-table th, table.routine-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); vertical-align: middle; }
     table.routine-table th { background: #0f172a; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; }
     
@@ -72,6 +78,7 @@
     .drag-handle { cursor: grab; text-align: center; color: var(--text-muted); width: 30px; user-select: none; }
     .block-cell { text-align: center; font-weight: 800; font-size: 1.1rem; background: #0f172a; color: #60a5fa; width: 60px; }
     .sec-cell { text-align: center; font-weight: 700; color: var(--text-muted); width: 45px; }
+    .time-calc-cell { text-align: center; font-weight: 700; font-family: monospace; color: #a7f3d0; font-size: 0.85rem; width: 65px; }
 
     .av-container { display: flex; flex-direction: column; gap: 4px; }
     .custom-input { margin-top: 4px; }
@@ -115,7 +122,7 @@
     .day-pill { background: #0f172a; border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; user-select: none; }
     .day-pill.selected { background: var(--accent); border-color: var(--accent); color: white; }
 
-    .live-mode input, .live-mode select { pointer-events: none !important; opacity: 0.9; }
+    .live-mode input, .live-mode select, .live-mode textarea { pointer-events: none !important; opacity: 0.9; }
     .live-mode .no-print { display: none !important; }
 
     #pdfTemplate { display: none; background: #ffffff; color: #000000; padding: 30px; font-family: 'Inter', sans-serif; }
@@ -157,7 +164,7 @@
 
 <nav id="appHeader" class="hidden">
   <div class="nav-brand">
-    SiCARP-TV <span>v2.1</span>
+    SiCARP-TV <span>v3.0</span>
   </div>
   <div class="nav-user">
     <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; background: #0f172a; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color);">
@@ -217,7 +224,10 @@
   <div id="viewRoutineEditor" class="hidden">
     <div style="margin-bottom: 15px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
       <button class="btn btn-secondary btn-sm" onclick="navToRoutinesList(activeProgramId)">← Volver a Rutinas</button>
-      <button id="btnEditorExportPDF" class="btn btn-success btn-sm" onclick="downloadPDF()">📄 Descargar PDF Oficial</button>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button id="btnUndo" class="btn btn-secondary btn-sm" onclick="undoRoutineChange()" title="Deshacer último cambio (Ctrl+Z)">↩️ Deshacer</button>
+        <button id="btnEditorExportPDF" class="btn btn-success btn-sm" onclick="downloadPDF()">📄 Descargar PDF Oficial</button>
+      </div>
     </div>
 
     <div class="meta-grid" id="editorMetaGrid">
@@ -252,10 +262,11 @@
             <th class="no-print" style="width: 30px;"></th>
             <th style="width: 45px;">N°</th>
             <th style="width: 65px;">Bloque</th>
+            <th style="width: 65px;">Hora</th>
             <th style="width: 80px;">Duración</th>
             <th style="width: 120px;">Estilo</th>
             <th>Título / Nota</th>
-            <th>Detalle</th>
+            <th style="min-width: 220px;">Detalle</th>
             <th style="width: 160px;">Soporte AV</th>
             <th class="no-print" style="width: 40px;"></th>
           </tr>
@@ -435,6 +446,40 @@
   window.activeRoutineId = null;
   window.tempProgramLogo = '';
 
+  // PILA PARA HISTORIAL DE DESHACER (CTRL + Z)
+  window.undoStack = [];
+
+  window.recordUndoState = function() {
+    if (!window.activeRoutineId) return;
+    const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
+    if (r && r.routine) {
+      if (window.undoStack.length >= 40) window.undoStack.shift();
+      window.undoStack.push(JSON.stringify(r.routine));
+    }
+  }
+
+  window.undoRoutineChange = function() {
+    if (!window.activeRoutineId || window.undoStack.length === 0) return;
+    const previousRoutine = JSON.parse(window.undoStack.pop());
+    const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
+    if (r) {
+      r.routine = previousRoutine;
+      window.saveDb();
+      renderEditorTable();
+    }
+  }
+
+  // Atajo de teclado para Ctrl+Z
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+      const activeEl = document.activeElement;
+      if (!activeEl || (activeEl.tagName !== 'INPUT' && activeEl.tagName !== 'TEXTAREA')) {
+        e.preventDefault();
+        window.undoRoutineChange();
+      }
+    }
+  });
+
   const dbRef = ref(database, 'sicarptv_sync/main_database');
 
   async function initFirebaseSync() {
@@ -552,6 +597,7 @@
     window.currentUser = null;
     window.activeProgramId = null;
     window.activeRoutineId = null;
+    window.undoStack = [];
     localStorage.removeItem('sicarp_current_user');
     document.getElementById('loginUser').value = '';
     document.getElementById('loginPass').value = '';
@@ -567,6 +613,7 @@
   window.navToPrograms = function() {
     window.activeProgramId = null;
     window.activeRoutineId = null;
+    window.undoStack = [];
     document.getElementById('viewRoutinesList').classList.add('hidden');
     document.getElementById('viewRoutineEditor').classList.add('hidden');
     document.getElementById('viewPrograms').classList.remove('hidden');
@@ -576,6 +623,7 @@
   window.navToRoutinesList = function(progId) {
     window.activeProgramId = progId;
     window.activeRoutineId = null;
+    window.undoStack = [];
     document.getElementById('viewPrograms').classList.add('hidden');
     document.getElementById('viewRoutineEditor').classList.add('hidden');
     document.getElementById('viewRoutinesList').classList.remove('hidden');
@@ -594,6 +642,7 @@
 
   window.navToEditor = function(routineId) {
     window.activeRoutineId = routineId;
+    window.undoStack = [];
     document.getElementById('viewPrograms').classList.add('hidden');
     document.getElementById('viewRoutinesList').classList.add('hidden');
     document.getElementById('viewRoutineEditor').classList.remove('hidden');
@@ -610,9 +659,11 @@
     if (window.currentUser.role === 'conduccion') {
       editorContainer.classList.add('live-mode');
       document.getElementById('editorMetaGrid').querySelectorAll('input').forEach(i => i.disabled = true);
+      document.getElementById('btnUndo').classList.add('hidden');
     } else {
       editorContainer.classList.remove('live-mode');
       document.getElementById('editorMetaGrid').querySelectorAll('input').forEach(i => i.disabled = false);
+      document.getElementById('btnUndo').classList.remove('hidden');
     }
     renderEditorTable();
   }
@@ -891,12 +942,36 @@
     }
   }
 
+  // CÁLCULO DE HORA PARA CADA FILA SEGÚN HORARIO DE INICIO DEL PROGRAMA
+  function parseStartSeconds(timeStr) {
+    if (!timeStr) return 0;
+    const parts = timeStr.split(':');
+    const h = parseInt(parts[0]) || 0;
+    const m = parseInt(parts[1]) || 0;
+    return (h * 3600) + (m * 60);
+  }
+
+  function formatClockTime(secondsTotal) {
+    const secInDay = secondsTotal % (24 * 3600);
+    const h = Math.floor(secInDay / 3600);
+    const m = Math.floor((secInDay % 3600) / 60);
+    const s = secInDay % 60;
+    const hh = String(h).padStart(2, '0');
+    const mm = String(m).padStart(2, '0');
+    const ss = String(s).padStart(2, '0');
+    return s > 0 ? `${hh}:${mm}:${ss}` : `${hh}:${mm}`;
+  }
+
   window.renderEditorTable = function() {
     const tbody = document.getElementById('routineBody');
     tbody.innerHTML = '';
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
     if (!r) return;
+    const prog = window.dbState.programs.find(p => p.id === r.programId);
     const routineData = r.routine || [];
+
+    let startSecs = parseStartSeconds(prog ? prog.timeStart : '');
+    let currentCumulativeSecs = startSecs;
 
     let secCount = 1;
     let tandaCount = 1;
@@ -927,6 +1002,13 @@
       const tr = document.createElement('tr');
       if (item.type === 'tanda') tr.classList.add('is-tanda');
 
+      const itemStartTimeStr = formatClockTime(currentCumulativeSecs);
+      
+      const parts = item.duration ? item.duration.split(':') : ['0','0'];
+      const m = parseInt(parts[0]) || 0;
+      const s = parseInt(parts[1]) || 0;
+      currentCumulativeSecs += (m * 60) + s;
+
       let html = `<td class="drag-handle no-print" draggable="true" ondragstart="handleDragStart(event, ${index})" ondragover="event.preventDefault()" ondrop="handleDrop(event, ${index})">☰</td>`;
       html += `<td class="sec-cell">${index + 1}</td>`;
 
@@ -934,6 +1016,7 @@
         const tandaTitle = `TANDA COMERCIAL N°${tandaCount++}`;
         item.title = tandaTitle;
         html += `<td class="block-cell" style="color:#ef4444; font-size:0.85rem;">TANDA</td>`;
+        html += `<td class="time-calc-cell" style="color:#fca5a5;">${itemStartTimeStr}</td>`;
         html += `<td><input type="text" class="duration-input" value="${item.duration}" onfocus="this.select()" oninput="handleDurationInput(this, ${index})"></td>`;
         html += `<td colspan="4"><input type="text" style="font-weight:bold; color:#f87171;" value="${tandaTitle}" disabled></td>`;
         groupPointer++;
@@ -945,6 +1028,7 @@
         }
 
         secCount++;
+        html += `<td class="time-calc-cell">${itemStartTimeStr}</td>`;
         html += `<td><input type="text" class="duration-input" value="${item.duration}" onfocus="this.select()" oninput="handleDurationInput(this, ${index})"></td>`;
         html += `<td>
           <select onchange="updateRowData(${index}, 'style', this.value)">
@@ -954,6 +1038,9 @@
             <option ${item.style==='ENTREVISTA'?'selected':''}>ENTREVISTA</option>
             <option ${item.style==='INFORME'?'selected':''}>INFORME</option>
             <option ${item.style==='MOVIL'?'selected':''}>MOVIL</option>
+            <option ${item.style==='NOTA'?'selected':''}>NOTA</option>
+            <option ${item.style==='PISO'?'selected':''}>PISO</option>
+            <option ${item.style==='PNT'?'selected':''}>PNT</option>
             <option ${item.style==='CIERRE'?'selected':''}>CIERRE</option>
             <option ${item.style==='OTRO'?'selected':''}>OTRO</option>
           </select>
@@ -961,7 +1048,7 @@
         </td>`;
 
         html += `<td><input type="text" value="${item.title}" onfocus="this.select()" oninput="updateRowData(${index}, 'title', this.value)"></td>`;
-        html += `<td><input type="text" value="${item.detail}" onfocus="this.select()" oninput="updateRowData(${index}, 'detail', this.value)"></td>`;
+        html += `<td><textarea rows="2" placeholder="Detalle / notas..." oninput="updateRowData(${index}, 'detail', this.value)">${item.detail || ''}</textarea></td>`;
 
         html += `<td>
           <div class="av-container">
@@ -1009,9 +1096,10 @@
     input.value = formatted;
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
     if (r && r.routine[index]) {
+      window.recordUndoState();
       r.routine[index].duration = formatted;
       window.saveDb();
-      updateEditorStatsOnly();
+      renderEditorTable();
     }
   }
 
@@ -1048,12 +1136,14 @@
 
   window.updateRowData = function(index, field, val) {
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
+    window.recordUndoState();
     r.routine[index][field] = val;
     window.saveDb();
     if (field === 'style' || field === 'av') renderEditorTable();
   }
 
   window.addRow = function(type) {
+    window.recordUndoState();
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
     if (type === 'tanda') {
       r.routine.push({ type: 'tanda', duration: '05:00', style: 'TANDA', title: 'TANDA COMERCIAL', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' });
@@ -1065,6 +1155,7 @@
   }
 
   window.deleteEditorRow = function(index) {
+    window.recordUndoState();
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
     r.routine.splice(index, 1);
     window.saveDb();
@@ -1076,6 +1167,7 @@
     e.preventDefault();
     const sourceIndex = e.dataTransfer.getData('text/plain');
     if (sourceIndex === "") return;
+    window.recordUndoState();
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
     const item = r.routine.splice(sourceIndex, 1)[0];
     r.routine.splice(targetIndex, 0, item);
@@ -1118,6 +1210,7 @@
 
   window.resetRoutineData = function() {
     if (confirm('¿Vaciar rutina?')) {
+      window.recordUndoState();
       const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
       r.routine = [];
       window.saveDb();
@@ -1352,16 +1445,17 @@
         <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:10.5px;">
           <thead>
             <tr>
-              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:45px;">BLOQUE</th>
-              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:30px;">N°</th>
+              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:40px;">BLOQUE</th>
+              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:25px;">N°</th>
+              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:45px;">HORA</th>
               <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:left;">TÍTULO / ESTILO</th>
               <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:left;">DETALLE / NOTAS</th>
-              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:left; width:120px;">APOYO AV / N°</th>
-              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:60px;">TIEMPO</th>
+              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:left; width:110px;">APOYO AV / N°</th>
+              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:45px;">TIEMPO</th>
             </tr>
           </thead>
           <tbody>
-            ${generatePdfRowsHtml(r.routine)}
+            ${generatePdfRowsHtml(r.routine, prog ? prog.timeStart : '')}
           </tbody>
         </table>
         <div style="border-top:2px solid #000; padding-top:8px; display:flex; justify-content:space-between; font-size:8.5px; font-weight:700; color:#334155; text-transform:uppercase;">
@@ -1371,12 +1465,15 @@
     `;
   }
 
-  function generatePdfRowsHtml(routineData) {
+  function generatePdfRowsHtml(routineData, timeStart) {
     let secPdfCounter = 1;
     let tandaPdfIndex = 1;
     let blockGroups = [];
     let currentBlockNum = 1;
     let currentBlockItemsCount = 0;
+
+    let startSecs = parseStartSeconds(timeStart);
+    let currentCumulativeSecs = startSecs;
 
     (routineData || []).forEach((item) => {
       if (item.type === 'tanda') {
@@ -1400,28 +1497,39 @@
 
     (routineData || []).forEach((item) => {
       const isTanda = item.type === 'tanda';
+      const itemStartTimeStr = formatClockTime(currentCumulativeSecs);
+      
+      const parts = item.duration ? item.duration.split(':') : ['0','0'];
+      const m = parseInt(parts[0]) || 0;
+      const s = parseInt(parts[1]) || 0;
+      currentCumulativeSecs += (m * 60) + s;
+
       htmlStr += `<tr style="${isTanda ? 'background:#fee2e2 !important;' : ''}">`;
 
       if (isTanda) {
         const tandaTitle = `TANDA COMERCIAL N°${tandaPdfIndex++}`;
         htmlStr += `<td style="font-weight:800; font-size:10px; color:#991b1b; text-align:center; border:1px solid #fca5a5;">TANDA</td>`;
+        htmlStr += `<td style="font-weight:700; font-family:monospace; font-size:9.5px; text-align:center; color:#991b1b; border:1px solid #fca5a5;">${itemStartTimeStr}</td>`;
         htmlStr += `<td colspan="4" style="font-weight:800; color:#991b1b; text-transform:uppercase; font-size:10.5px; text-align:center; border:1px solid #fca5a5;">${tandaTitle}</td>`;
-        htmlStr += `<td style="font-weight:700; font-family:monospace; font-size:11px; text-align:center; color:#991b1b; border:1px solid #fca5a5;">${item.duration}</td>`;
+        htmlStr += `<td style="font-weight:700; font-family:monospace; font-size:10.5px; text-align:center; color:#991b1b; border:1px solid #fca5a5;">${item.duration}</td>`;
         groupPointer++;
         rowInGroupCounter = 0;
       } else {
         if (rowInGroupCounter === 0) {
           const group = blockGroups[groupPointer];
-          htmlStr += `<td style="font-weight:800; font-size:12px; color:#000; text-align:center; vertical-align:middle; border:1px solid #cbd5e1;" rowspan="${group.count}">B${group.blockNum}</td>`;
+          htmlStr += `<td style="font-weight:800; font-size:11px; color:#000; text-align:center; vertical-align:middle; border:1px solid #cbd5e1;" rowspan="${group.count}">B${group.blockNum}</td>`;
         }
         let styleText = item.style === 'OTRO' ? item.styleCustom : item.style;
         let avText = item.av === 'OTRO' ? item.avCustom : item.av;
 
+        const formattedDetail = (item.detail || '-').replace(/\n/g, '<br>');
+
         htmlStr += `<td style="font-weight:700; color:#475569; text-align:center; border:1px solid #cbd5e1;">${secPdfCounter++}</td>`;
-        htmlStr += `<td style="border:1px solid #cbd5e1; padding:7px 8px;"><div style="font-weight:800; font-size:11px; color:#000;">${item.title}</div><div style="font-weight:600; text-transform:uppercase; font-size:9px; color:#64748b;">${styleText || ''}</div></td>`;
-        htmlStr += `<td style="border:1px solid #cbd5e1; font-size:10px; padding:7px 8px;">${item.detail || '-'}</td>`;
-        htmlStr += `<td style="border:1px solid #cbd5e1; padding:7px 8px;"><div style="font-size:10px; font-weight:700; color:#1e293b; text-transform:uppercase;">${avText !== 'NINGUNO' ? avText : '-'}</div>${item.avNum ? `<div style="font-size:9px; color:#64748b; font-weight:600;">N°: ${item.avNum}</div>` : ''}</td>`;
-        htmlStr += `<td style="font-weight:700; font-family:monospace; font-size:11px; text-align:center; border:1px solid #cbd5e1;">${item.duration}</td>`;
+        htmlStr += `<td style="font-weight:700; font-family:monospace; font-size:9.5px; text-align:center; color:#0f172a; border:1px solid #cbd5e1;">${itemStartTimeStr}</td>`;
+        htmlStr += `<td style="border:1px solid #cbd5e1; padding:6px 7px;"><div style="font-weight:800; font-size:10.5px; color:#000;">${item.title}</div><div style="font-weight:600; text-transform:uppercase; font-size:8.5px; color:#64748b;">${styleText || ''}</div></td>`;
+        htmlStr += `<td style="border:1px solid #cbd5e1; font-size:9.5px; padding:6px 7px; line-height:1.25;">${formattedDetail}</td>`;
+        htmlStr += `<td style="border:1px solid #cbd5e1; padding:6px 7px;"><div style="font-size:9.5px; font-weight:700; color:#1e293b; text-transform:uppercase;">${avText !== 'NINGUNO' ? avText : '-'}</div>${item.avNum ? `<div style="font-size:8.5px; color:#64748b; font-weight:600;">N°: ${item.avNum}</div>` : ''}</td>`;
+        htmlStr += `<td style="font-weight:700; font-family:monospace; font-size:10.5px; text-align:center; border:1px solid #cbd5e1;">${item.duration}</td>`;
 
         rowInGroupCounter++;
         if (rowInGroupCounter >= blockGroups[groupPointer].count) {
