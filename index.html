@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SiCARP-TV - Sistema de Creación y Administración de Rutinas y Programas Televisivos (v3.1)</title>
+  <title>SiCARP-TV - Sistema de Rutinas y Programas (v4.0)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -38,7 +38,7 @@
     .btn-success:hover { background: #15803d; }
     .btn-sm { padding: 4px 8px; font-size: 0.78rem; }
     
-    input[type="text"], input[type="password"], select, textarea {
+    input[type="text"], input[type="password"], input[type="email"], select, textarea {
       background: #0f172a;
       border: 1px solid var(--border-color);
       color: white;
@@ -48,12 +48,7 @@
       width: 100%;
       outline: none;
     }
-    textarea {
-      resize: vertical;
-      min-height: 42px;
-      line-height: 1.3;
-      font-family: inherit;
-    }
+    textarea { resize: vertical; min-height: 42px; line-height: 1.3; font-family: inherit; }
     input:focus, select:focus, textarea:focus { border-color: var(--accent); }
     
     .form-group { margin-bottom: 14px; }
@@ -77,7 +72,9 @@
     .drag-handle { cursor: grab; text-align: center; color: var(--text-muted); width: 30px; user-select: none; }
     .block-cell { text-align: center; font-weight: 800; font-size: 1.1rem; background: #0f172a; color: #60a5fa; width: 60px; }
     .sec-cell { text-align: center; font-weight: 700; color: var(--text-muted); width: 45px; }
-    .time-calc-cell { text-align: center; font-weight: 700; font-family: monospace; color: #a7f3d0; font-size: 0.85rem; width: 65px; }
+    
+    /* Columna de Tiempo Compactada */
+    .time-calc-cell { text-align: center; font-weight: 700; font-family: monospace; color: #a7f3d0; font-size: 0.72rem; letter-spacing: -0.5px; width: 55px; padding: 4px !important; }
 
     .av-container { display: flex; flex-direction: column; gap: 4px; }
     .custom-input { margin-top: 4px; }
@@ -94,6 +91,7 @@
     .login-card { background: var(--card-bg); border: 1px solid var(--border-color); width: 100%; max-width: 400px; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
     .login-title { font-size: 1.4rem; font-weight: 800; text-align: center; margin-bottom: 6px; }
     .login-subtitle { font-size: 0.8rem; text-align: center; color: var(--text-muted); margin-bottom: 24px; }
+    .auth-toggle { text-align: center; margin-top: 15px; font-size: 0.8rem; color: #60a5fa; cursor: pointer; text-decoration: underline; }
     
     .section-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
     .section-title { font-size: 1.2rem; font-weight: 700; }
@@ -111,6 +109,26 @@
     .stats-bar { display: flex; gap: 15px; background: #0f172a; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; font-weight: 600; font-size: 0.8rem; flex-wrap: wrap; }
     .stat-item { display: flex; gap: 6px; }
     .stat-value { color: #60a5fa; font-weight: 700; }
+
+    /* BARRA FLOTANTE DE HERRAMIENTAS */
+    .sticky-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(8px);
+      padding: 12px 15px;
+      margin: 0 -15px 15px -15px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    
+    .avatar-circle { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; border: 2px solid var(--card-bg); text-transform: uppercase; cursor: help; }
 
     .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 15px; }
     .modal-content { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; width: 100%; max-width: 550px; max-height: 90vh; overflow-y: auto; }
@@ -131,23 +149,27 @@
 <div id="viewLogin" class="login-wrapper">
   <div class="login-card">
     <div class="login-title">SiCARP-TV</div>
-    <div class="login-subtitle">Sistema de Creación y Administración de Rutinas y Programas Televisivos</div>
+    <div class="login-subtitle">Sistema de Rutinas y Programas</div>
     <div class="login-subtitle" style="margin-top: -18px; margin-bottom: 20px; font-weight: 600; color: #60a5fa;">Creado por Felipe Gámez</div>
     
     <div id="loginError" class="hidden" style="background:#451a1a; color:#f87171; border:1px solid #991b1b; padding:8px 12px; border-radius:6px; font-size:0.8rem; margin-bottom:12px; text-align:center;">
-      Usuario o contraseña incorrectos
+      Error de autenticación
     </div>
 
-    <form autocomplete="on" onsubmit="handleLogin(event)">
-      <div class="form-group">
-        <label>Usuario</label>
-        <input type="text" id="loginUser" name="username" placeholder="Usuario" autocomplete="username" required>
+    <form id="authForm" autocomplete="on" onsubmit="handleAuthSubmit(event)">
+      <div class="form-group hidden" id="registerNameGroup">
+        <label>Nombre y Apellido</label>
+        <input type="text" id="authName" placeholder="Tu nombre">
       </div>
       <div class="form-group">
-        <label>Contraseña</label>
+        <label>Correo Electrónico</label>
+        <input type="email" id="authEmail" placeholder="correo@ejemplo.com" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label>Contraseña secreta</label>
         <div class="password-input-container">
-          <input type="password" id="loginPass" name="password" placeholder="Contraseña" autocomplete="current-password" required>
-          <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility()" title="Ver u ocultar contraseña" id="btnTogglePass">
+          <input type="password" id="authPass" placeholder="Mínimo 6 caracteres" autocomplete="current-password" required>
+          <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility()">
             <svg id="eyeIcon" viewBox="0 0 24 24">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
               <circle cx="12" cy="12" r="3"></circle>
@@ -155,14 +177,30 @@
           </button>
         </div>
       </div>
-      <button type="submit" class="btn btn-success" style="width: 100%; justify-content: center; padding: 12px; margin-top: 10px;">Ingresar al Sistema</button>
+      
+      <!-- Opciones de acceso -->
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
+        <button type="submit" id="authSubmitBtn" class="btn btn-success" style="justify-content: center; padding: 12px;">Ingresar al Sistema</button>
+        
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="height:1px; background:var(--border-color); flex:1;"></div>
+          <span style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">O iniciar con</span>
+          <div style="height:1px; background:var(--border-color); flex:1;"></div>
+        </div>
+
+        <button type="button" onclick="handleGoogleLogin()" class="btn" style="background:#ffffff; color:#0f172a; padding:12px; justify-content:center; border:1px solid #cbd5e1;">
+           <img src="https://www.svgrepo.com/show/475656/google-color.svg" style="width:18px; height:18px;"> Google
+        </button>
+      </div>
+
+      <div class="auth-toggle" onclick="toggleAuthMode()" id="authToggleText">¿No tenés cuenta? Registrate acá</div>
     </form>
   </div>
 </div>
 
 <nav id="appHeader" class="hidden">
   <div class="nav-brand">
-    SiCARP-TV <span>v3.1</span>
+    SiCARP-TV <span>v4.0</span>
   </div>
   <div class="nav-user">
     <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; background: #0f172a; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color);">
@@ -170,8 +208,8 @@
       <span id="syncText">Conectando...</span>
     </div>
     <button id="btnNavUsers" class="btn btn-secondary btn-sm hidden" onclick="openUsersModal()">👥 Usuarios</button>
-    <div><span id="navUsername" class="user-badge">Admin</span></div>
-    <button class="btn btn-danger btn-sm" onclick="logout()">Salir</button>
+    <div><span id="navUsername" class="user-badge">Cargando...</span></div>
+    <button class="btn btn-danger btn-sm" onclick="handleLogout()">Salir</button>
   </div>
 </nav>
 
@@ -182,7 +220,7 @@
         <div class="section-title">Programas de Televisión</div>
         <div style="font-size: 0.8rem; color: var(--text-muted);">Seleccioná un programa para ver sus escaletas</div>
       </div>
-      <button id="btnNewProgram" class="btn" onclick="openProgramModal()">➕ Nuevo Programa</button>
+      <button id="btnNewProgram" class="btn hidden" onclick="openProgramModal()">➕ Nuevo Programa</button>
     </div>
     <div class="grid-programs" id="programsGrid"></div>
   </div>
@@ -220,11 +258,24 @@
   </div>
 
   <div id="viewRoutineEditor" class="hidden">
-    <div style="margin-bottom: 15px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-      <button class="btn btn-secondary btn-sm" onclick="navToRoutinesList(activeProgramId)">← Volver a Rutinas</button>
-      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-        <button id="btnUndo" class="btn btn-secondary btn-sm" onclick="undoRoutineChange()" title="Deshacer último cambio (Ctrl+Z)">↩️ Deshacer</button>
-        <button id="btnEditorExportPDF" class="btn btn-success btn-sm" onclick="downloadPDF()">📄 Descargar PDF Oficial</button>
+    <!-- BARRA FLOTANTE / STICKY TOOLBAR -->
+    <div class="sticky-toolbar">
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <button class="btn btn-secondary btn-sm" onclick="navToRoutinesList(activeProgramId)">← Atrás</button>
+        <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 4px;" class="no-print"></div>
+        <button id="btnUndo" class="btn btn-secondary btn-sm no-print" onclick="undoRoutineChange()" title="Deshacer (Ctrl+Z)">↩️</button>
+        <button id="btnRedo" class="btn btn-secondary btn-sm no-print" onclick="redoRoutineChange()" title="Rehacer (Ctrl+Y)">↪️</button>
+      </div>
+      
+      <!-- PRESENCIA EN TIEMPO REAL -->
+      <div id="presenceAvatars" style="display:flex; gap:6px; align-items:center;"></div>
+
+      <div class="no-print" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <button class="btn btn-sm" onclick="addRow('sec')">➕ Sección</button>
+        <button class="btn btn-danger btn-sm" onclick="addRow('tanda')">📺 Tanda</button>
+        <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 4px;"></div>
+        <button class="btn btn-secondary btn-sm" onclick="resetRoutineData()" title="Vaciar">🗑️</button>
+        <button id="btnEditorExportPDF" class="btn btn-success btn-sm" onclick="downloadPDF()">📄 PDF Oficial</button>
       </div>
     </div>
 
@@ -245,22 +296,14 @@
       <div class="stat-item">TOTAL: <span class="stat-value" id="statDurTotal">00:00</span></div>
     </div>
 
-    <div class="actions-bar no-print" style="margin-bottom: 15px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-        <button class="btn btn-sm" onclick="addRow('sec')">➕ Sección</button>
-        <button class="btn btn-danger btn-sm" onclick="addRow('tanda')">📺 Tanda</button>
-      </div>
-      <button class="btn btn-secondary btn-sm" onclick="resetRoutineData()">🗑️ Vaciar</button>
-    </div>
-
-    <div class="table-responsive">
+    <div class="table-responsive" style="overflow:visible;">
       <table class="routine-table" id="editorTable">
         <thead>
           <tr>
             <th class="no-print" style="width: 30px;"></th>
             <th style="width: 45px;">N°</th>
             <th style="width: 65px;">Bloque</th>
-            <th style="width: 65px;">Hora</th>
+            <th style="width: 55px; text-align:center;">Hora</th>
             <th style="width: 80px;">Duración</th>
             <th style="width: 120px;">Estilo</th>
             <th>Título / Nota</th>
@@ -275,6 +318,7 @@
   </div>
 </div>
 
+<!-- Resto de modales (Programa, Usuarios, Nueva Rutina) -->
 <div id="modalProgram" class="modal-backdrop hidden">
   <div class="modal-content">
     <div class="modal-header">
@@ -331,33 +375,35 @@
 <div id="modalUsers" class="modal-backdrop hidden">
   <div class="modal-content" style="max-width: 650px;">
     <div class="modal-header">
-      <div style="font-weight: 700; font-size: 1.1rem;">Gestión de Usuarios</div>
+      <div style="font-weight: 700; font-size: 1.1rem;">Gestión de Permisos de Usuarios</div>
       <button class="btn btn-secondary btn-sm" onclick="closeModal('modalUsers')">✕</button>
     </div>
-    <form onsubmit="handleSaveUser(event)" style="background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:15px; background:var(--card-bg); padding:10px; border:1px solid var(--border-color); border-radius:6px;">
+      Los usuarios gestionan sus propias contraseñas o entran con Google. Acá solo modificás sus permisos y accesos. Las cuentas nuevas entran por defecto como "Conducción".
+    </div>
+    <form onsubmit="handleSaveUserPerms(event)" style="background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
       <input type="hidden" id="userFormId">
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
-        <div class="form-group" style="margin-bottom:0;"><label>Usuario</label><input type="text" id="userFormName" required></div>
-        <div class="form-group" style="margin-bottom:0;"><label>Contraseña</label><input type="text" id="userFormPass" required></div>
+        <div class="form-group" style="margin-bottom:0;"><label>Nombre / Email</label><input type="text" id="userFormName" disabled style="color:#94a3b8;"></div>
         <div class="form-group" style="margin-bottom:0;">
           <label>Rol</label>
           <select id="userFormRole">
             <option value="produccion">Producción</option>
-            <option value="conduccion">Conducción</option>
+            <option value="conduccion">Conducción (Solo lectura)</option>
             <option value="admin">Administrador</option>
           </select>
         </div>
       </div>
       <div class="form-group" style="margin-top: 10px; margin-bottom:0;">
-        <label>Programas Asignados</label>
+        <label>Programas Asignados (No aplica a Administradores)</label>
         <div id="userFormProgramsCheckboxes" style="display:flex; flex-wrap:wrap; gap:10px; background:var(--card-bg); padding:8px; border-radius:4px; max-height:80px; overflow-y:auto;"></div>
       </div>
-      <button type="submit" class="btn btn-sm btn-success" style="margin-top: 10px; width: 100%; justify-content: center;">Guardar Usuario</button>
+      <button type="submit" class="btn btn-sm btn-success" style="margin-top: 10px; width: 100%; justify-content: center;">Guardar Permisos</button>
     </form>
     <div class="table-responsive">
       <table class="routine-table">
         <thead>
-          <tr><th>USUARIO</th><th>ROL</th><th>PROGRAMAS</th><th style="width: 70px; text-align: center;">ACCIONES</th></tr>
+          <tr><th>NOMBRE / EMAIL</th><th>ROL</th><th>PROGRAMAS</th><th style="width: 70px; text-align: center;">ACCIÓN</th></tr>
         </thead>
         <tbody id="usersListBody"></tbody>
       </table>
@@ -379,9 +425,11 @@
 
 <div id="pdfTemplate"></div>
 
+<!-- NÚCLEO DE CONEXIÓN FIREBASE (AUTENTICACIÓN REAL) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-  import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+  import { getDatabase, ref, set, get, onValue, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut as firebaseSignOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCqXF8iasjqF3G8UsSyvOC1Gu8PF1msBNQ",
@@ -396,151 +444,51 @@
 
   const app = initializeApp(firebaseConfig);
   const database = getDatabase(app);
+  const auth = getAuth(app);
+  const dbRef = ref(database, 'sicarptv_sync/main_database');
 
-  const defaultDb = {
-    users: [
-      { id: 'u1', username: 'admin', pass: 'TVMaster2026!', role: 'admin', assignedPrograms: [] },
-      { id: 'u2', username: 'produccion', pass: 'produ123', role: 'produccion', assignedPrograms: [] },
-      { id: 'u3', username: 'conduccion', pass: 'vivo123', role: 'conduccion', assignedPrograms: [] }
-    ],
-    programs: [
-      {
-        id: 'p1',
-        name: 'Programa Ejemplo',
-        channel: 'Canal Ejemplo',
-        logo: '',
-        defaultHosts: 'Conductor A, Conductor B',
-        defaultProducers: 'Productor A',
-        firstDate: '30/10/2026',
-        timeStart: '15:00',
-        timeEnd: '17:00',
-        daysList: [1, 2, 3, 4, 5]
-      }
-    ],
-    routines: [
-      {
-        id: 'r1',
-        programId: 'p1',
-        pgmNum: '001',
-        date: '30/10/2026',
-        channel: 'Canal Ejemplo',
-        name: 'Programa Ejemplo',
-        hosts: 'Conductor A, Conductor B',
-        producers: 'Productor A',
-        routine: [
-          { type: 'sec', duration: '01:20', style: 'APERTURA', styleCustom: '', title: 'Apertura de Programa', detail: 'Presentación', av: 'NINGUNO', avCustom: '', avNum: '' },
-          { type: 'sec', duration: '15:00', style: 'ENTREVISTA', styleCustom: '', title: 'Nota Principal', detail: 'Entrevista', av: 'APOYO', avCustom: '', avNum: '102' },
-          { type: 'tanda', duration: '05:00', style: 'TANDA', title: 'TANDA COMERCIAL N°1', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' },
-          { type: 'sec', duration: '10:00', style: 'INFORME', styleCustom: '', title: 'Informe Especial', detail: 'Video', av: 'TOTAL', avCustom: '', avNum: '088' }
-        ]
-      }
-    ]
-  };
+  const defaultDb = { users: [], programs: [], routines: [] };
 
-  window.dbState = JSON.parse(localStorage.getItem('sicarp_db_v3')) || defaultDb;
+  window.dbState = defaultDb;
   window.currentUser = null;
   window.activeProgramId = null;
   window.activeRoutineId = null;
   window.tempProgramLogo = '';
+  
+  // Stacks para Deshacer/Rehacer
   window.undoStack = [];
+  window.redoStack = [];
+  
+  // Estado UI Login
+  window.isAuthModeLogin = true;
 
-  window.recordUndoState = function() {
-    if (!window.activeRoutineId) return;
-    const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
-    if (r && r.routine) {
-      if (window.undoStack.length >= 40) window.undoStack.shift();
-      window.undoStack.push(JSON.stringify(r.routine));
+  // Utilidad IDs Únicos para protección de cursor colaborativo
+  function generateId() { return Math.random().toString(36).substr(2, 9); }
+
+  // UI Autenticación
+  window.toggleAuthMode = function() {
+    window.isAuthModeLogin = !window.isAuthModeLogin;
+    const nameGroup = document.getElementById('registerNameGroup');
+    const submitBtn = document.getElementById('authSubmitBtn');
+    const toggleText = document.getElementById('authToggleText');
+    const errBox = document.getElementById('loginError');
+    errBox.classList.add('hidden');
+
+    if (window.isAuthModeLogin) {
+      nameGroup.classList.add('hidden');
+      document.getElementById('authName').required = false;
+      submitBtn.innerText = "Ingresar al Sistema";
+      toggleText.innerText = "¿No tenés cuenta? Registrate acá";
+    } else {
+      nameGroup.classList.remove('hidden');
+      document.getElementById('authName').required = true;
+      submitBtn.innerText = "Crear cuenta y entrar";
+      toggleText.innerText = "¿Ya tenés cuenta? Iniciá sesión";
     }
-  }
-
-  window.undoRoutineChange = function() {
-    if (!window.activeRoutineId || window.undoStack.length === 0) return;
-    const previousRoutine = JSON.parse(window.undoStack.pop());
-    const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
-    if (r) {
-      r.routine = previousRoutine;
-      window.saveDb();
-      renderEditorTable();
-    }
-  }
-
-  document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-      const activeEl = document.activeElement;
-      if (!activeEl || (activeEl.tagName !== 'INPUT' && activeEl.tagName !== 'TEXTAREA')) {
-        e.preventDefault();
-        window.undoRoutineChange();
-      }
-    }
-  });
-
-  const dbRef = ref(database, 'sicarptv_sync/main_database');
-
-  async function initFirebaseSync() {
-    try {
-      const snapshot = await get(dbRef);
-      if (snapshot.exists()) {
-        window.dbState = snapshot.val();
-        localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
-        refreshActiveViews();
-      } else {
-        await set(dbRef, window.dbState);
-      }
-
-      onValue(dbRef, (snapshot) => {
-        if (snapshot.exists()) {
-          window.dbState = snapshot.val();
-          localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
-          refreshActiveViews();
-          document.getElementById('syncDot').style.background = '#22c55e';
-          document.getElementById('syncText').innerText = 'Sincronizado Cloud';
-        }
-      }, (error) => {
-        document.getElementById('syncDot').style.background = '#ef4444';
-        document.getElementById('syncText').innerText = 'Error de Sincronización';
-      });
-
-    } catch (e) {
-      document.getElementById('syncDot').style.background = '#eab308';
-      document.getElementById('syncText').innerText = 'Modo Local';
-    }
-  }
-
-  window.saveDbCloud = async function() {
-    localStorage.setItem('sicarp_db_v3', JSON.stringify(window.dbState));
-    try {
-      document.getElementById('syncDot').style.background = '#3b82f6';
-      document.getElementById('syncText').innerText = 'Guardando...';
-      await set(dbRef, window.dbState);
-      document.getElementById('syncDot').style.background = '#22c55e';
-      document.getElementById('syncText').innerText = 'Sincronizado Cloud';
-    } catch (e) {
-      document.getElementById('syncDot').style.background = '#ef4444';
-      document.getElementById('syncText').innerText = 'Error al Guardar';
-    }
-  }
-
-  function refreshActiveViews() {
-    if (!window.currentUser) return;
-    const viewPrograms = document.getElementById('viewPrograms');
-    const viewRoutines = document.getElementById('viewRoutinesList');
-    const viewEditor = document.getElementById('viewRoutineEditor');
-
-    if (!viewPrograms.classList.contains('hidden')) {
-      renderProgramsGrid();
-    } else if (!viewRoutines.classList.contains('hidden') && window.activeProgramId) {
-      renderRoutinesList();
-    } else if (!viewEditor.classList.contains('hidden') && window.activeRoutineId) {
-      updateEditorStatsOnly();
-    }
-  }
-
-  window.saveDb = function() {
-    window.saveDbCloud();
   }
 
   window.togglePasswordVisibility = function() {
-    const passInput = document.getElementById('loginPass');
+    const passInput = document.getElementById('authPass');
     const eyeIcon = document.getElementById('eyeIcon');
     if (passInput.type === 'password') {
       passInput.type = 'text';
@@ -551,22 +499,158 @@
     }
   }
 
-  window.handleLogin = function(e) {
-    e.preventDefault();
-    const userVal = document.getElementById('loginUser').value.trim();
-    const passVal = document.getElementById('loginPass').value.trim();
-    const user = window.dbState.users.find(u => u.username.toLowerCase() === userVal.toLowerCase() && u.pass === passVal);
-    
-    if (user) {
-      initSession(user);
-    } else {
-      document.getElementById('loginError').classList.remove('hidden');
+  // Google Login
+  window.handleGoogleLogin = async function() {
+    const provider = new GoogleAuthProvider();
+    const errBox = document.getElementById('loginError');
+    errBox.classList.add('hidden');
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      const snapshot = await get(dbRef);
+      let db = snapshot.exists() ? snapshot.val() : window.dbState;
+      let existing = (db.users || []).find(u => u.id === user.uid);
+      
+      if (!existing) {
+         const isFirstUser = (db.users || []).length === 0;
+         db.users = db.users || [];
+         db.users.push({
+           id: user.uid,
+           email: user.email,
+           username: user.displayName || user.email.split('@')[0],
+           role: isFirstUser ? 'admin' : 'conduccion', // Defecto: Conducción (Solo lectura)
+           assignedPrograms: []
+         });
+         window.dbState = db;
+         await set(dbRef, db);
+      }
+    } catch (error) {
+      console.error(error);
+      errBox.innerText = 'Error al ingresar con Google.';
+      errBox.classList.remove('hidden');
     }
+  }
+
+  // Email Login/Register
+  window.handleAuthSubmit = async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('authEmail').value.trim();
+    const pass = document.getElementById('authPass').value.trim();
+    const name = document.getElementById('authName').value.trim();
+    const errBox = document.getElementById('loginError');
+    errBox.classList.add('hidden');
+    document.getElementById('authSubmitBtn').innerText = "Cargando...";
+
+    try {
+      if (window.isAuthModeLogin) {
+        await signInWithEmailAndPassword(auth, email, pass);
+      } else {
+        const userCred = await createUserWithEmailAndPassword(auth, email, pass);
+        const snapshot = await get(dbRef);
+        let db = snapshot.exists() ? snapshot.val() : window.dbState;
+        const isFirstUser = (db.users || []).length === 0;
+        
+        db.users = db.users || [];
+        db.users.push({
+          id: userCred.user.uid,
+          email: email,
+          username: name || email.split('@')[0],
+          role: isFirstUser ? 'admin' : 'conduccion',
+          assignedPrograms: []
+        });
+        window.dbState = db;
+        await set(dbRef, db);
+      }
+    } catch (error) {
+      errBox.innerText = error.code === 'auth/invalid-credential' ? 'Email o clave incorrectos.' : (error.code === 'auth/email-already-in-use' ? 'Ese email ya está registrado.' : 'Error de autenticación.');
+      errBox.classList.remove('hidden');
+      document.getElementById('authSubmitBtn').innerText = window.isAuthModeLogin ? "Ingresar al Sistema" : "Crear cuenta y entrar";
+    }
+  }
+
+  window.handleLogout = async function() {
+    leaveRoutinePresence();
+    await firebaseSignOut(auth);
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      const snapshot = await get(dbRef);
+      if (snapshot.exists()) window.dbState = snapshot.val();
+      else await set(dbRef, window.dbState); 
+
+      let dbUser = (window.dbState.users || []).find(u => u.id === user.uid);
+      if (dbUser) {
+        initSession(dbUser);
+        startDbSync(); 
+      } else {
+        document.getElementById('loginError').innerText = "Tu cuenta está pendiente de configuración.";
+        document.getElementById('loginError').classList.remove('hidden');
+        await firebaseSignOut(auth);
+      }
+    } else {
+      window.currentUser = null;
+      window.activeProgramId = null;
+      window.activeRoutineId = null;
+      document.getElementById('loginError').classList.add('hidden');
+      document.getElementById('appHeader').classList.add('hidden');
+      document.getElementById('mainContainer').classList.add('hidden');
+      document.getElementById('viewPrograms').classList.add('hidden');
+      document.getElementById('viewRoutinesList').classList.add('hidden');
+      document.getElementById('viewRoutineEditor').classList.add('hidden');
+      document.getElementById('viewLogin').classList.remove('hidden');
+      document.getElementById('authSubmitBtn').innerText = window.isAuthModeLogin ? "Ingresar al Sistema" : "Crear cuenta y entrar";
+      document.getElementById('authEmail').value = '';
+      document.getElementById('authPass').value = '';
+    }
+  });
+
+  function startDbSync() {
+    onValue(dbRef, (snapshot) => {
+      if (snapshot.exists()) {
+        // [PROTECCIÓN DE COLLABORACIÓN] Capturar foco actual antes del re-render
+        let activeId = null;
+        let cStart = 0, cEnd = 0;
+        const ae = document.activeElement;
+        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT')) {
+           activeId = ae.id;
+           try { cStart = ae.selectionStart; cEnd = ae.selectionEnd; } catch(e){}
+        }
+
+        window.dbState = snapshot.val();
+        refreshActiveViews();
+        
+        document.getElementById('syncDot').style.background = '#22c55e';
+        document.getElementById('syncText').innerText = 'Sincronizado Cloud';
+        
+        if (window.currentUser) {
+           const updatedMe = window.dbState.users.find(u => u.id === window.currentUser.id);
+           if(updatedMe) {
+             window.currentUser.role = updatedMe.role;
+             window.currentUser.assignedPrograms = updatedMe.assignedPrograms || [];
+           }
+        }
+
+        // [PROTECCIÓN DE COLLABORACIÓN] Restaurar foco sin interrumpir tipeo
+        if (activeId) {
+          setTimeout(() => {
+            const el = document.getElementById(activeId);
+            if (el) {
+              el.focus();
+              try { el.setSelectionRange(cStart, cEnd); } catch(e){}
+            }
+          }, 0);
+        }
+      }
+    }, (error) => {
+      document.getElementById('syncDot').style.background = '#ef4444';
+      document.getElementById('syncText').innerText = 'Error de Sincronización';
+    });
   }
 
   function initSession(user) {
     window.currentUser = user;
-    localStorage.setItem('sicarp_current_user', user.username);
     document.getElementById('loginError').classList.add('hidden');
     document.getElementById('viewLogin').classList.add('hidden');
     document.getElementById('appHeader').classList.remove('hidden');
@@ -587,27 +671,127 @@
     navToPrograms();
   }
 
-  window.logout = function() {
-    window.currentUser = null;
-    window.activeProgramId = null;
-    window.activeRoutineId = null;
-    window.undoStack = [];
-    localStorage.removeItem('sicarp_current_user');
-    document.getElementById('loginUser').value = '';
-    document.getElementById('loginPass').value = '';
-    document.getElementById('loginError').classList.add('hidden');
-    document.getElementById('appHeader').classList.add('hidden');
-    document.getElementById('mainContainer').classList.add('hidden');
-    document.getElementById('viewPrograms').classList.add('hidden');
-    document.getElementById('viewRoutinesList').classList.add('hidden');
-    document.getElementById('viewRoutineEditor').classList.add('hidden');
-    document.getElementById('viewLogin').classList.remove('hidden');
+  window.saveDbCloud = async function() {
+    try {
+      document.getElementById('syncDot').style.background = '#3b82f6';
+      document.getElementById('syncText').innerText = 'Guardando...';
+      await set(dbRef, window.dbState);
+      document.getElementById('syncDot').style.background = '#22c55e';
+      document.getElementById('syncText').innerText = 'Sincronizado Cloud';
+    } catch (e) {
+      document.getElementById('syncDot').style.background = '#ef4444';
+      document.getElementById('syncText').innerText = 'Error al Guardar';
+    }
+  }
+  window.saveDb = function() { window.saveDbCloud(); }
+
+  // LOGICA PRESENCIA (Avatares en tiempo real)
+  let currentPresenceRef = null;
+  let presenceUnsubscribe = null;
+
+  function joinRoutinePresence(routineId) {
+    if (currentPresenceRef) remove(currentPresenceRef);
+    if (presenceUnsubscribe) presenceUnsubscribe();
+    
+    currentPresenceRef = ref(database, `sicarptv_presence/${routineId}/${window.currentUser.id}`);
+    set(currentPresenceRef, { name: window.currentUser.username, timestamp: Date.now() });
+    onDisconnect(currentPresenceRef).remove();
+
+    const routinePresenceRef = ref(database, `sicarptv_presence/${routineId}`);
+    presenceUnsubscribe = onValue(routinePresenceRef, (snap) => {
+      renderPresence(snap.val());
+    });
+  }
+
+  function leaveRoutinePresence() {
+     if (currentPresenceRef) { remove(currentPresenceRef); currentPresenceRef = null; }
+     if (presenceUnsubscribe) { presenceUnsubscribe(); presenceUnsubscribe = null; }
+     document.getElementById('presenceAvatars').innerHTML = '';
+  }
+
+  function renderPresence(data) {
+     const container = document.getElementById('presenceAvatars');
+     if (!container) return;
+     container.innerHTML = '';
+     if (!data) return;
+     Object.values(data).forEach(u => {
+       const initial = u.name ? u.name.charAt(0).toUpperCase() : '?';
+       container.innerHTML += `<div class="avatar-circle" title="${u.name} editando...">${initial}</div>`;
+     });
+  }
+
+  // LOGICA DESHACER / REHACER
+  window.recordUndoState = function() {
+    if (!window.activeRoutineId) return;
+    const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
+    if (r && r.routine) {
+      // Asegurarnos que todos tienen UID antes de guardar estado
+      r.routine.forEach(i => { if(!i.uid) i.uid = generateId(); });
+      if (window.undoStack.length >= 40) window.undoStack.shift();
+      window.undoStack.push(JSON.stringify(r.routine));
+      window.redoStack = []; // Se limpia el Rehacer al realizar una nueva acción
+    }
+  }
+
+  window.undoRoutineChange = function() {
+    if (!window.activeRoutineId || window.undoStack.length === 0) return;
+    const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
+    if (r) {
+      window.redoStack.push(JSON.stringify(r.routine));
+      r.routine = JSON.parse(window.undoStack.pop());
+      window.saveDb();
+    }
+  }
+
+  window.redoRoutineChange = function() {
+    if (!window.activeRoutineId || window.redoStack.length === 0) return;
+    const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
+    if (r) {
+      window.undoStack.push(JSON.stringify(r.routine));
+      r.routine = JSON.parse(window.redoStack.pop());
+      window.saveDb();
+    }
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key.toLowerCase() === 'z') {
+        const activeEl = document.activeElement;
+        if (!activeEl || (activeEl.tagName !== 'INPUT' && activeEl.tagName !== 'TEXTAREA')) {
+          e.preventDefault();
+          if (e.shiftKey) window.redoRoutineChange();
+          else window.undoRoutineChange();
+        }
+      } else if (e.key.toLowerCase() === 'y') {
+        const activeEl = document.activeElement;
+        if (!activeEl || (activeEl.tagName !== 'INPUT' && activeEl.tagName !== 'TEXTAREA')) {
+          e.preventDefault();
+          window.redoRoutineChange();
+        }
+      }
+    }
+  });
+
+  // RUTEO Y VISTAS
+  function refreshActiveViews() {
+    if (!window.currentUser) return;
+    const viewPrograms = document.getElementById('viewPrograms');
+    const viewRoutines = document.getElementById('viewRoutinesList');
+    const viewEditor = document.getElementById('viewRoutineEditor');
+
+    if (!viewPrograms.classList.contains('hidden')) renderProgramsGrid();
+    else if (!viewRoutines.classList.contains('hidden') && window.activeProgramId) renderRoutinesList();
+    else if (!viewEditor.classList.contains('hidden') && window.activeRoutineId) {
+      updateEditorStatsOnly();
+      renderEditorTable();
+    }
   }
 
   window.navToPrograms = function() {
+    leaveRoutinePresence();
     window.activeProgramId = null;
     window.activeRoutineId = null;
-    window.undoStack = [];
+    window.undoStack = []; window.redoStack = [];
     document.getElementById('viewRoutinesList').classList.add('hidden');
     document.getElementById('viewRoutineEditor').classList.add('hidden');
     document.getElementById('viewPrograms').classList.remove('hidden');
@@ -615,9 +799,10 @@
   }
 
   window.navToRoutinesList = function(progId) {
+    leaveRoutinePresence();
     window.activeProgramId = progId;
     window.activeRoutineId = null;
-    window.undoStack = [];
+    window.undoStack = []; window.redoStack = [];
     document.getElementById('viewPrograms').classList.add('hidden');
     document.getElementById('viewRoutineEditor').classList.add('hidden');
     document.getElementById('viewRoutinesList').classList.remove('hidden');
@@ -626,17 +811,16 @@
     document.getElementById('routineListProgTitle').innerText = prog.name;
     document.getElementById('routineListProgSub').innerText = `${prog.channel} | Emisiones`;
     
-    if (window.currentUser.role === 'conduccion') {
-      document.getElementById('btnNewRoutine').classList.add('hidden');
-    } else {
-      document.getElementById('btnNewRoutine').classList.remove('hidden');
-    }
+    if (window.currentUser.role === 'conduccion') document.getElementById('btnNewRoutine').classList.add('hidden');
+    else document.getElementById('btnNewRoutine').classList.remove('hidden');
     renderRoutinesList();
   }
 
   window.navToEditor = function(routineId) {
     window.activeRoutineId = routineId;
-    window.undoStack = [];
+    window.undoStack = []; window.redoStack = [];
+    joinRoutinePresence(routineId);
+
     document.getElementById('viewPrograms').classList.add('hidden');
     document.getElementById('viewRoutinesList').classList.add('hidden');
     document.getElementById('viewRoutineEditor').classList.remove('hidden');
@@ -654,10 +838,12 @@
       editorContainer.classList.add('live-mode');
       document.getElementById('editorMetaGrid').querySelectorAll('input').forEach(i => i.disabled = true);
       document.getElementById('btnUndo').classList.add('hidden');
+      document.getElementById('btnRedo').classList.add('hidden');
     } else {
       editorContainer.classList.remove('live-mode');
       document.getElementById('editorMetaGrid').querySelectorAll('input').forEach(i => i.disabled = false);
       document.getElementById('btnUndo').classList.remove('hidden');
+      document.getElementById('btnRedo').classList.remove('hidden');
     }
     renderEditorTable();
   }
@@ -666,11 +852,10 @@
     const grid = document.getElementById('programsGrid');
     grid.innerHTML = '';
     let allowedProgs = [];
-    if (window.currentUser.role === 'admin') {
-      allowedProgs = window.dbState.programs;
-    } else {
+    if (window.currentUser.role === 'admin') allowedProgs = window.dbState.programs || [];
+    else {
       const assigned = window.currentUser.assignedPrograms || [];
-      allowedProgs = window.dbState.programs.filter(p => assigned.includes(p.id));
+      allowedProgs = (window.dbState.programs || []).filter(p => assigned.includes(p.id));
     }
 
     if (allowedProgs.length === 0) {
@@ -686,16 +871,11 @@
 
       card.innerHTML = `
         <div class="card-header">
-          <div>
-            <div class="card-title">${p.name}</div>
-            <div class="card-channel">${p.channel}</div>
-          </div>
+          <div><div class="card-title">${p.name}</div><div class="card-channel">${p.channel}</div></div>
           ${p.logo ? `<img src="${p.logo}" class="card-logo">` : ''}
         </div>
         <div class="card-meta">
-          <div>🗓️ ${daysText}</div>
-          <div>⏰ ${timeText}</div>
-          <div>🎬 1ª Emisión: ${p.firstDate || '-'}</div>
+          <div>🗓️ ${daysText}</div><div>⏰ ${timeText}</div><div>🎬 1ª Emisión: ${p.firstDate || '-'}</div>
         </div>
         <div class="card-actions">
           <button class="btn btn-sm" onclick="navToRoutinesList('${p.id}')">Ver Rutinas →</button>
@@ -712,30 +892,21 @@
     });
   }
 
-  function parseDurationToSeconds(val) {
-    if (!val) return 0;
-    if (val.includes(':')) {
-      const parts = val.split(':');
-      return ((parseInt(parts[0]) || 0) * 60) + (parseInt(parts[1]) || 0);
-    } else {
-      let digits = val.replace(/\D/g, '');
-      if (digits.length === 0) return 0;
-      if (digits.length <= 2) {
-        return (parseInt(digits) || 0) * 60;
-      } else if (digits.length === 3) {
-        return ((parseInt(digits[0]) || 0) * 60) + (parseInt(digits.slice(1)) || 0);
-      } else {
-        digits = digits.slice(-4);
-        return ((parseInt(digits.slice(0,2)) || 0) * 60) + (parseInt(digits.slice(2)) || 0);
-      }
-    }
+  // Parsing fechas formato DD/MM/YYYY para ordenar
+  function parseDateCustom(dateStr) {
+    if (!dateStr || dateStr.length < 8) return 0;
+    const p = dateStr.split('/');
+    return new Date(p[2], p[1]-1, p[0]).getTime();
   }
 
   window.renderRoutinesList = function() {
     const tbody = document.getElementById('routinesListBody');
     tbody.innerHTML = '';
-    const progtines = window.dbState.routines.filter(r => r.programId === window.activeProgramId);
+    const progtines = (window.dbState.routines || []).filter(r => r.programId === window.activeProgramId);
     
+    // Orden Inteligente: Más reciente primero
+    progtines.sort((a, b) => parseDateCustom(b.date) - parseDateCustom(a.date));
+
     if (progtines.length === 0) {
       tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:20px;">No hay rutinas creadas.</td></tr>`;
       return;
@@ -745,9 +916,7 @@
       const tr = document.createElement('tr');
       let durTotal = '00:00';
       let secSecs = 0;
-      (r.routine || []).forEach(item => {
-        secSecs += parseDurationToSeconds(item.duration);
-      });
+      (r.routine || []).forEach(item => secSecs += parseDurationToSeconds(item.duration));
       durTotal = formatSeconds(secSecs);
       const dayName = getDayNameFromDate(r.date);
 
@@ -769,49 +938,36 @@
     });
   }
 
+  // (Modal Programa, Logos, y Guardar - Mismo que v3.1)
   window.openProgramModal = function(editId = null) {
     const modal = document.getElementById('modalProgram');
     document.getElementById('progFormId').value = editId || '';
     document.getElementById('modalProgTitle').innerText = editId ? 'Editar Programa' : 'Nuevo Programa';
-    
-    document.getElementById('progFormName').value = '';
-    document.getElementById('progFormChannel').value = '';
-    document.getElementById('progFormHosts').value = '';
-    document.getElementById('progFormProducers').value = '';
-    document.getElementById('progFormFirstDate').value = '';
-    document.getElementById('progFormTimeStart').value = '';
-    document.getElementById('progFormTimeEnd').value = '';
-    document.getElementById('progFormLogoPreviewContainer').style.display = 'none';
-    document.getElementById('progFormLogoInput').value = '';
-    window.tempProgramLogo = '';
-
+    document.getElementById('progFormName').value = ''; document.getElementById('progFormChannel').value = '';
+    document.getElementById('progFormHosts').value = ''; document.getElementById('progFormProducers').value = '';
+    document.getElementById('progFormFirstDate').value = ''; document.getElementById('progFormTimeStart').value = '';
+    document.getElementById('progFormTimeEnd').value = ''; document.getElementById('progFormLogoPreviewContainer').style.display = 'none';
+    document.getElementById('progFormLogoInput').value = ''; window.tempProgramLogo = '';
     document.querySelectorAll('#daysPicker .day-pill').forEach(p => p.classList.remove('selected'));
 
     if (editId) {
       const p = window.dbState.programs.find(item => item.id === editId);
       if (p) {
-        document.getElementById('progFormName').value = p.name || '';
-        document.getElementById('progFormChannel').value = p.channel || '';
-        document.getElementById('progFormHosts').value = p.defaultHosts || '';
-        document.getElementById('progFormProducers').value = p.defaultProducers || '';
-        document.getElementById('progFormFirstDate').value = p.firstDate || '';
-        document.getElementById('progFormTimeStart').value = p.timeStart || '';
-        document.getElementById('progFormTimeEnd').value = p.timeEnd || '';
-        window.tempProgramLogo = p.logo || '';
+        document.getElementById('progFormName').value = p.name || ''; document.getElementById('progFormChannel').value = p.channel || '';
+        document.getElementById('progFormHosts').value = p.defaultHosts || ''; document.getElementById('progFormProducers').value = p.defaultProducers || '';
+        document.getElementById('progFormFirstDate').value = p.firstDate || ''; document.getElementById('progFormTimeStart').value = p.timeStart || '';
+        document.getElementById('progFormTimeEnd').value = p.timeEnd || ''; window.tempProgramLogo = p.logo || '';
         if (window.tempProgramLogo) {
           document.getElementById('progFormLogoPreview').src = window.tempProgramLogo;
           document.getElementById('progFormLogoPreviewContainer').style.display = 'flex';
         }
-        if (p.daysList) {
-          p.daysList.forEach(d => {
-            const pill = document.querySelector(`#daysPicker .day-pill[data-day="${d}"]`);
-            if (pill) pill.classList.add('selected');
-          });
-        }
+        if (p.daysList) p.daysList.forEach(d => {
+          const pill = document.querySelector(`#daysPicker .day-pill[data-day="${d}"]`);
+          if (pill) pill.classList.add('selected');
+        });
       }
     }
-    modal.classList.remove('hidden');
-    modal.style.display = 'flex';
+    modal.classList.remove('hidden'); modal.style.display = 'flex';
   }
 
   window.handleProgramLogoUpload = function(e) {
@@ -827,18 +983,11 @@
     }
   }
 
-  window.removeProgramLogo = function() {
-    window.tempProgramLogo = '';
-    document.getElementById('progFormLogoInput').value = '';
-    document.getElementById('progFormLogoPreviewContainer').style.display = 'none';
-  }
-
+  window.removeProgramLogo = function() { window.tempProgramLogo = ''; document.getElementById('progFormLogoInput').value = ''; document.getElementById('progFormLogoPreviewContainer').style.display = 'none'; }
   window.toggleDayPill = function(el) {
     const dayVal = parseInt(el.getAttribute('data-day'));
-    if (dayVal === -1) {
-      document.querySelectorAll('#daysPicker .day-pill').forEach(p => p.classList.remove('selected'));
-      el.classList.add('selected');
-    } else {
+    if (dayVal === -1) { document.querySelectorAll('#daysPicker .day-pill').forEach(p => p.classList.remove('selected')); el.classList.add('selected'); }
+    else {
       const undefinedPill = document.querySelector('#daysPicker .day-pill[data-day="-1"]');
       if (undefinedPill) undefinedPill.classList.remove('selected');
       el.classList.toggle('selected');
@@ -849,120 +998,98 @@
     e.preventDefault();
     const editId = document.getElementById('progFormId').value;
     const selectedDays = [];
-    document.querySelectorAll('#daysPicker .day-pill.selected').forEach(p => {
-      selectedDays.push(parseInt(p.getAttribute('data-day')));
-    });
-
+    document.querySelectorAll('#daysPicker .day-pill.selected').forEach(p => selectedDays.push(parseInt(p.getAttribute('data-day'))));
     const progData = {
       id: editId || 'p_' + Date.now(),
-      name: document.getElementById('progFormName').value,
-      channel: document.getElementById('progFormChannel').value,
-      logo: window.tempProgramLogo,
-      defaultHosts: document.getElementById('progFormHosts').value,
-      defaultProducers: document.getElementById('progFormProducers').value,
-      firstDate: document.getElementById('progFormFirstDate').value,
-      timeStart: document.getElementById('progFormTimeStart').value,
-      timeEnd: document.getElementById('progFormTimeEnd').value,
-      daysList: selectedDays
+      name: document.getElementById('progFormName').value, channel: document.getElementById('progFormChannel').value,
+      logo: window.tempProgramLogo, defaultHosts: document.getElementById('progFormHosts').value, defaultProducers: document.getElementById('progFormProducers').value,
+      firstDate: document.getElementById('progFormFirstDate').value, timeStart: document.getElementById('progFormTimeStart').value,
+      timeEnd: document.getElementById('progFormTimeEnd').value, daysList: selectedDays
     };
-
-    if (editId) {
-      const idx = window.dbState.programs.findIndex(p => p.id === editId);
-      window.dbState.programs[idx] = progData;
-    } else {
-      window.dbState.programs.push(progData);
-    }
-
-    window.saveDb();
-    closeModal('modalProgram');
-    renderProgramsGrid();
+    if(!window.dbState.programs) window.dbState.programs = [];
+    if (editId) { const idx = window.dbState.programs.findIndex(p => p.id === editId); window.dbState.programs[idx] = progData; }
+    else window.dbState.programs.push(progData);
+    window.saveDb(); closeModal('modalProgram'); renderProgramsGrid();
   }
 
   window.duplicateProgram = function(progId) {
     const p = window.dbState.programs.find(item => item.id === progId);
     if (p) {
       const newP = JSON.parse(JSON.stringify(p));
-      newP.id = 'p_' + Date.now();
-      newP.name = `${p.name} (Copia)`;
-      window.dbState.programs.push(newP);
-      window.saveDb();
-      renderProgramsGrid();
+      newP.id = 'p_' + Date.now(); newP.name = `${p.name} (Copia)`;
+      window.dbState.programs.push(newP); window.saveDb(); renderProgramsGrid();
     }
   }
-
   window.deleteProgram = function(progId) {
     if (confirm('¿Eliminar programa y rutinas?')) {
       window.dbState.programs = window.dbState.programs.filter(p => p.id !== progId);
-      window.dbState.routines = window.dbState.routines.filter(r => r.programId !== progId);
-      window.saveDb();
-      renderProgramsGrid();
+      window.dbState.routines = (window.dbState.routines || []).filter(r => r.programId !== progId);
+      window.saveDb(); renderProgramsGrid();
     }
   }
 
-  window.openNewRoutineDialog = function() {
-    document.getElementById('modalNewRoutine').classList.remove('hidden');
-    document.getElementById('modalNewRoutine').style.display = 'flex';
-  }
+  window.openNewRoutineDialog = function() { document.getElementById('modalNewRoutine').classList.remove('hidden'); document.getElementById('modalNewRoutine').style.display = 'flex'; }
 
   window.createNewRoutine = function(duplicateLast) {
     closeModal('modalNewRoutine');
     const prog = window.dbState.programs.find(p => p.id === window.activeProgramId);
-    const existingRoutines = window.dbState.routines.filter(r => r.programId === window.activeProgramId);
+    const existingRoutines = (window.dbState.routines || []).filter(r => r.programId === window.activeProgramId);
     
-    let baseStructure = [
-      { type: 'sec', duration: '05:00', style: 'APERTURA', styleCustom: '', title: 'Apertura', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' }
-    ];
-
+    let baseStructure = [ { uid: generateId(), type: 'sec', duration: '05:00', style: 'APERTURA', styleCustom: '', title: 'Apertura', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' } ];
     let lastRoutine = null;
     if (existingRoutines.length > 0) {
-      lastRoutine = existingRoutines[existingRoutines.length - 1];
+      // Ordenamos para tomar la última cronológicamente (que ahora es la del índice 0 en nuestra vista pero busquemos la más reciente)
+      existingRoutines.sort((a, b) => parseDateCustom(b.date) - parseDateCustom(a.date));
+      lastRoutine = existingRoutines[0];
       if (duplicateLast && lastRoutine.routine) {
         baseStructure = JSON.parse(JSON.stringify(lastRoutine.routine));
+        baseStructure.forEach(i => i.uid = generateId()); // Regenerar UIDs para la copia
       }
     }
 
     let nextDateStr = getTodayFormatted();
-    if (lastRoutine && lastRoutine.date) {
-      nextDateStr = getNextEmisionDate(lastRoutine.date, prog.daysList);
-    } else if (prog.firstDate) {
-      nextDateStr = prog.firstDate;
-    }
+    if (lastRoutine && lastRoutine.date) nextDateStr = getNextEmisionDate(lastRoutine.date, prog.daysList);
+    else if (prog.firstDate) nextDateStr = prog.firstDate;
 
     const calculatedPgmNum = calculatePgmNumForDate(prog, nextDateStr);
     const newRoutine = {
-      id: 'r_' + Date.now(),
-      programId: window.activeProgramId,
-      pgmNum: calculatedPgmNum,
-      date: nextDateStr,
-      channel: prog.channel,
-      name: prog.name,
-      hosts: prog.defaultHosts,
-      producers: prog.defaultProducers,
-      routine: baseStructure
+      id: 'r_' + Date.now(), programId: window.activeProgramId, pgmNum: calculatedPgmNum, date: nextDateStr,
+      channel: prog.channel, name: prog.name, hosts: prog.defaultHosts, producers: prog.defaultProducers, routine: baseStructure
     };
-
+    if(!window.dbState.routines) window.dbState.routines = [];
     window.dbState.routines.push(newRoutine);
-    window.saveDb();
-    navToEditor(newRoutine.id);
+    window.saveDb(); navToEditor(newRoutine.id);
   }
 
   window.deleteRoutine = function(routineId) {
     if (confirm('¿Eliminar rutina?')) {
       window.dbState.routines = window.dbState.routines.filter(r => r.id !== routineId);
-      window.saveDb();
-      renderRoutinesList();
+      window.saveDb(); renderRoutinesList();
+    }
+  }
+
+  function parseDurationToSeconds(val) {
+    if (!val) return 0;
+    if (val.includes(':')) {
+      const parts = val.split(':');
+      return ((parseInt(parts[0]) || 0) * 60) + (parseInt(parts[1]) || 0);
+    } else {
+      let digits = val.replace(/\D/g, '');
+      if (digits.length === 0) return 0;
+      if (digits.length <= 2) return (parseInt(digits) || 0) * 60;
+      else if (digits.length === 3) return ((parseInt(digits[0]) || 0) * 60) + (parseInt(digits.slice(1)) || 0);
+      else { digits = digits.slice(-4); return ((parseInt(digits.slice(0,2)) || 0) * 60) + (parseInt(digits.slice(2)) || 0); }
     }
   }
 
   function parseStartSeconds(timeStr) {
     if (!timeStr) return 0;
     const parts = timeStr.split(':');
-    const h = parseInt(parts[0]) || 0;
-    const m = parseInt(parts[1]) || 0;
-    return (h * 3600) + (m * 60);
+    return ((parseInt(parts[0]) || 0) * 3600) + ((parseInt(parts[1]) || 0) * 60);
   }
 
-  function formatClockTime(secondsTotal) {
+  // Formato Hora para el PDF y Tabla
+  function formatClockTime(secondsTotal, compact = false) {
     const secInDay = secondsTotal % (24 * 3600);
     const h = Math.floor(secInDay / 3600);
     const m = Math.floor((secInDay % 3600) / 60);
@@ -970,7 +1097,8 @@
     const hh = String(h).padStart(2, '0');
     const mm = String(m).padStart(2, '0');
     const ss = String(s).padStart(2, '0');
-    return s > 0 ? `${hh}:${mm}:${ss}` : `${hh}:${mm}`;
+    if (compact) return `${hh}:${mm}`; // Columna compacta Web
+    return s > 0 ? `${hh}:${mm}:${ss}` : `${hh}:${mm}`; // PDF y si hay segundos
   }
 
   window.recalculateTimes = function() {
@@ -978,16 +1106,12 @@
     if (!r) return;
     const prog = window.dbState.programs.find(p => p.id === r.programId);
     let currentCumulativeSecs = parseStartSeconds(prog ? prog.timeStart : '');
-    
     const timeCells = document.querySelectorAll('#routineBody .time-calc-cell');
     
     (r.routine || []).forEach((item, index) => {
-      if (timeCells[index]) {
-        timeCells[index].innerText = formatClockTime(currentCumulativeSecs);
-      }
+      if (timeCells[index]) timeCells[index].innerText = formatClockTime(currentCumulativeSecs, true); // Visual compacto Web
       currentCumulativeSecs += parseDurationToSeconds(item.duration);
     });
-    
     updateEditorStatsOnly();
   }
 
@@ -1002,36 +1126,28 @@
     let startSecs = parseStartSeconds(prog ? prog.timeStart : '');
     let currentCumulativeSecs = startSecs;
 
-    let secCount = 1;
-    let tandaCount = 1;
-    let blockGroups = [];
-    let currentBlockNum = 1;
-    let currentBlockItemsCount = 0;
+    let secCount = 1; let tandaCount = 1;
+    let blockGroups = []; let currentBlockNum = 1; let currentBlockItemsCount = 0;
+
+    // Asignar UIDs a ítems viejos si no tienen (Protección colaborativa)
+    routineData.forEach((item) => { if (!item.uid) item.uid = generateId(); });
 
     routineData.forEach((item) => {
       if (item.type === 'tanda') {
-        if (currentBlockItemsCount > 0) {
-          blockGroups.push({ isBlock: true, blockNum: currentBlockNum++, count: currentBlockItemsCount });
-          currentBlockItemsCount = 0;
-        }
+        if (currentBlockItemsCount > 0) { blockGroups.push({ isBlock: true, blockNum: currentBlockNum++, count: currentBlockItemsCount }); currentBlockItemsCount = 0; }
         blockGroups.push({ isBlock: false, count: 1 });
-      } else {
-        currentBlockItemsCount++;
-      }
+      } else currentBlockItemsCount++;
     });
+    if (currentBlockItemsCount > 0) blockGroups.push({ isBlock: true, blockNum: currentBlockNum, count: currentBlockItemsCount });
 
-    if (currentBlockItemsCount > 0) {
-      blockGroups.push({ isBlock: true, blockNum: currentBlockNum, count: currentBlockItemsCount });
-    }
-
-    let groupPointer = 0;
-    let rowInGroupCounter = 0;
+    let groupPointer = 0; let rowInGroupCounter = 0;
 
     routineData.forEach((item, index) => {
+      const uid = item.uid; // ID único para focus
       const tr = document.createElement('tr');
       if (item.type === 'tanda') tr.classList.add('is-tanda');
 
-      const itemStartTimeStr = formatClockTime(currentCumulativeSecs);
+      const itemStartTimeStr = formatClockTime(currentCumulativeSecs, true); // Compacto HH:MM en web
       currentCumulativeSecs += parseDurationToSeconds(item.duration);
 
       let html = `<td class="drag-handle no-print" draggable="true" ondragstart="handleDragStart(event, ${index})" ondragover="event.preventDefault()" ondrop="handleDrop(event, ${index})">☰</td>`;
@@ -1042,21 +1158,19 @@
         item.title = tandaTitle;
         html += `<td class="block-cell" style="color:#ef4444; font-size:0.85rem;">TANDA</td>`;
         html += `<td class="time-calc-cell" style="color:#fca5a5;">${itemStartTimeStr}</td>`;
-        html += `<td><input type="text" class="duration-input" value="${item.duration}" onfocus="this.select()" onblur="handleDurationBlur(this, ${index})" oninput="handleDurationInput(this, ${index})"></td>`;
+        html += `<td><input type="text" id="dur-${uid}" class="duration-input" value="${item.duration}" onfocus="this.select()" onblur="handleDurationBlur(this, ${index})" oninput="handleDurationInput(this, ${index})"></td>`;
         html += `<td colspan="4"><input type="text" style="font-weight:bold; color:#f87171;" value="${tandaTitle}" disabled></td>`;
-        groupPointer++;
-        rowInGroupCounter = 0;
+        groupPointer++; rowInGroupCounter = 0;
       } else {
         if (rowInGroupCounter === 0) {
           const group = blockGroups[groupPointer];
           html += `<td class="block-cell" rowspan="${group.count}">B${group.blockNum}</td>`;
         }
-
         secCount++;
         html += `<td class="time-calc-cell">${itemStartTimeStr}</td>`;
-        html += `<td><input type="text" class="duration-input" value="${item.duration}" onfocus="this.select()" onblur="handleDurationBlur(this, ${index})" oninput="handleDurationInput(this, ${index})"></td>`;
+        html += `<td><input type="text" id="dur-${uid}" class="duration-input" value="${item.duration}" onfocus="this.select()" onblur="handleDurationBlur(this, ${index})" oninput="handleDurationInput(this, ${index})"></td>`;
         html += `<td>
-          <select onchange="updateRowData(${index}, 'style', this.value)">
+          <select id="style-${uid}" onchange="updateRowData(${index}, 'style', this.value)">
             <option ${item.style==='APERTURA'?'selected':''}>APERTURA</option>
             <option ${item.style==='COLUMNA'?'selected':''}>COLUMNA</option>
             <option ${item.style==='DEBATE'?'selected':''}>DEBATE</option>
@@ -1069,38 +1183,28 @@
             <option ${item.style==='CIERRE'?'selected':''}>CIERRE</option>
             <option ${item.style==='OTRO'?'selected':''}>OTRO</option>
           </select>
-          ${item.style === 'OTRO' ? `<input type="text" class="custom-input" placeholder="Escribir..." value="${item.styleCustom || ''}" onfocus="this.select()" oninput="updateRowData(${index}, 'styleCustom', this.value)">` : ''}
+          ${item.style === 'OTRO' ? `<input type="text" id="styleCustom-${uid}" class="custom-input" placeholder="Escribir..." value="${item.styleCustom || ''}" onfocus="this.select()" oninput="updateRowData(${index}, 'styleCustom', this.value)">` : ''}
         </td>`;
-
-        html += `<td><input type="text" value="${item.title}" onfocus="this.select()" oninput="updateRowData(${index}, 'title', this.value)"></td>`;
-        html += `<td><textarea rows="2" placeholder="Detalle / notas..." oninput="updateRowData(${index}, 'detail', this.value)">${item.detail || ''}</textarea></td>`;
-
+        html += `<td><input type="text" id="title-${uid}" value="${item.title}" onfocus="this.select()" oninput="updateRowData(${index}, 'title', this.value)"></td>`;
+        html += `<td><textarea rows="2" id="detail-${uid}" placeholder="Detalle / notas..." oninput="updateRowData(${index}, 'detail', this.value)">${item.detail || ''}</textarea></td>`;
         html += `<td>
           <div class="av-container">
-            <select onchange="updateRowData(${index}, 'av', this.value)">
+            <select id="av-${uid}" onchange="updateRowData(${index}, 'av', this.value)">
               <option ${item.av==='NINGUNO'?'selected':''}>NINGUNO</option>
               <option ${item.av==='APOYO'?'selected':''}>APOYO</option>
               <option ${item.av==='TOTAL'?'selected':''}>TOTAL</option>
               <option ${item.av==='INFORME'?'selected':''}>INFORME</option>
               <option ${item.av==='OTRO'?'selected':''}>OTRO</option>
             </select>
-            ${item.av === 'OTRO' ? `<input type="text" class="custom-input" placeholder="Escribir..." value="${item.avCustom || ''}" onfocus="this.select()" oninput="updateRowData(${index}, 'avCustom', this.value)">` : ''}
-            <input type="text" placeholder="N° Archivo" value="${item.avNum || ''}" onfocus="this.select()" oninput="updateRowData(${index}, 'avNum', this.value)">
+            ${item.av === 'OTRO' ? `<input type="text" id="avCustom-${uid}" class="custom-input" placeholder="Escribir..." value="${item.avCustom || ''}" onfocus="this.select()" oninput="updateRowData(${index}, 'avCustom', this.value)">` : ''}
+            <input type="text" id="avNum-${uid}" placeholder="N° Archivo" value="${item.avNum || ''}" onfocus="this.select()" oninput="updateRowData(${index}, 'avNum', this.value)">
           </div>
         </td>`;
-
         rowInGroupCounter++;
-        if (rowInGroupCounter >= blockGroups[groupPointer].count) {
-          rowInGroupCounter = 0;
-          groupPointer++;
-        }
+        if (rowInGroupCounter >= blockGroups[groupPointer].count) { rowInGroupCounter = 0; groupPointer++; }
       }
-
-      html += `<td class="no-print" style="text-align:center;">
-        <button class="btn btn-danger btn-action" onclick="deleteEditorRow(${index})">✕</button>
-      </td>`;
-      tr.innerHTML = html;
-      tbody.appendChild(tr);
+      html += `<td class="no-print" style="text-align:center;"><button class="btn btn-danger btn-action" onclick="deleteEditorRow(${index})">✕</button></td>`;
+      tr.innerHTML = html; tbody.appendChild(tr);
     });
 
     const totalBlocksCount = blockGroups.filter(g => g.isBlock).length;
@@ -1109,81 +1213,31 @@
 
   window.handleDurationInput = function(input, index) {
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
-    if (r && r.routine[index]) {
-      r.routine[index].duration = input.value;
-      recalculateTimes();
-    }
+    if (r && r.routine[index]) { r.routine[index].duration = input.value; recalculateTimes(); }
   }
 
   window.handleDurationBlur = function(input, index) {
-    let val = input.value;
-    let formatted = '00:00';
-    
+    let val = input.value; let formatted = '00:00';
     if (val.includes(':')) {
        const parts = val.split(':');
-       const m = String(parseInt(parts[0]) || 0).padStart(2, '0');
-       const s = String(parseInt(parts[1]) || 0).padStart(2, '0');
-       formatted = `${m}:${s}`;
+       formatted = `${String(parseInt(parts[0]) || 0).padStart(2, '0')}:${String(parseInt(parts[1]) || 0).padStart(2, '0')}`;
     } else {
        let digits = val.replace(/\D/g, '');
-       if (digits.length === 1 || digits.length === 2) {
-           formatted = `${digits.padStart(2, '0')}:00`; 
-       } else if (digits.length === 3) {
-           formatted = `0${digits[0]}:${digits.slice(1)}`; 
-       } else if (digits.length >= 4) {
-           digits = digits.slice(-4);
-           formatted = `${digits.slice(0,2)}:${digits.slice(2)}`; 
-       }
+       if (digits.length <= 2) formatted = `${digits.padStart(2, '0')}:00`; 
+       else if (digits.length === 3) formatted = `0${digits[0]}:${digits.slice(1)}`; 
+       else if (digits.length >= 4) { digits = digits.slice(-4); formatted = `${digits.slice(0,2)}:${digits.slice(2)}`; }
     }
-    
     input.value = formatted;
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
     if (r && r.routine[index]) {
-      if (r.routine[index].duration !== formatted) {
-        window.recordUndoState();
-      }
-      r.routine[index].duration = formatted;
-      window.saveDb();
-      recalculateTimes(); 
+      if (r.routine[index].duration !== formatted) window.recordUndoState();
+      r.routine[index].duration = formatted; window.saveDb(); recalculateTimes(); 
     }
-  }
-
-  window.handleTimeInput = function(input) {
-    let digits = input.value.replace(/\D/g, '');
-    if (digits.length > 4) digits = digits.slice(-4);
-    let formatted = '';
-    if (digits.length <= 2) {
-      formatted = digits;
-    } else if (digits.length === 3) {
-      formatted = `0${digits[0]}:${digits.slice(1)}`;
-    } else {
-      formatted = `${digits.slice(0, 2)}:${digits.slice(2)}`;
-    }
-    input.value = formatted;
-  }
-
-  window.updateEditorStatsOnly = function() {
-    const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
-    if (!r) return;
-    let secCount = 0;
-    let blockCount = 0;
-    let inBlock = false;
-    (r.routine || []).forEach((item) => {
-      if (item.type !== 'tanda') {
-        secCount++;
-        if (!inBlock) { blockCount++; inBlock = true; }
-      } else {
-        inBlock = false;
-      }
-    });
-    updateEditorStats(blockCount, secCount);
   }
 
   window.updateRowData = function(index, field, val) {
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
-    if (field === 'style' || field === 'av') {
-      window.recordUndoState();
-    }
+    if (field === 'style' || field === 'av') window.recordUndoState();
     r.routine[index][field] = val;
     window.saveDb();
     if (field === 'style' || field === 'av') renderEditorTable();
@@ -1192,66 +1246,58 @@
   window.addRow = function(type) {
     window.recordUndoState();
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
-    if (type === 'tanda') {
-      r.routine.push({ type: 'tanda', duration: '05:00', style: 'TANDA', title: 'TANDA COMERCIAL', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' });
-    } else {
-      r.routine.push({ type: 'sec', duration: '05:00', style: 'APERTURA', styleCustom: '', title: 'Nueva Sección', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' });
-    }
-    window.saveDb();
-    renderEditorTable();
+    if (type === 'tanda') r.routine.push({ uid: generateId(), type: 'tanda', duration: '05:00', style: 'TANDA', title: 'TANDA COMERCIAL', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' });
+    else r.routine.push({ uid: generateId(), type: 'sec', duration: '05:00', style: 'APERTURA', styleCustom: '', title: 'Nueva Sección', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' });
+    window.saveDb(); renderEditorTable();
   }
 
   window.deleteEditorRow = function(index) {
     window.recordUndoState();
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
-    r.routine.splice(index, 1);
-    window.saveDb();
-    renderEditorTable();
+    r.routine.splice(index, 1); window.saveDb(); renderEditorTable();
   }
 
   window.handleDragStart = function(e, index) { e.dataTransfer.setData('text/plain', index); }
   window.handleDrop = function(e, targetIndex) {
-    e.preventDefault();
-    const sourceIndex = e.dataTransfer.getData('text/plain');
+    e.preventDefault(); const sourceIndex = e.dataTransfer.getData('text/plain');
     if (sourceIndex === "") return;
     window.recordUndoState();
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
     const item = r.routine.splice(sourceIndex, 1)[0];
     r.routine.splice(targetIndex, 0, item);
-    window.saveDb();
-    renderEditorTable();
+    window.saveDb(); renderEditorTable();
   }
 
   window.saveCurrentRoutineMeta = function() {
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
     if (r) {
-      r.channel = document.getElementById('progChannel').value;
-      r.name = document.getElementById('progName').value;
-      r.pgmNum = document.getElementById('progNumber').value;
-      r.date = document.getElementById('progDate').value;
-      r.hosts = document.getElementById('progHosts').value;
-      r.producers = document.getElementById('progProducers').value;
+      r.channel = document.getElementById('progChannel').value; r.name = document.getElementById('progName').value;
+      r.pgmNum = document.getElementById('progNumber').value; r.date = document.getElementById('progDate').value;
+      r.hosts = document.getElementById('progHosts').value; r.producers = document.getElementById('progProducers').value;
       window.saveDb();
     }
   }
 
+  window.handleTimeInput = function(input) {
+    let digits = input.value.replace(/\D/g, '');
+    if (digits.length > 4) digits = digits.slice(-4);
+    let formatted = '';
+    if (digits.length <= 2) formatted = digits;
+    else if (digits.length === 3) formatted = `0${digits[0]}:${digits.slice(1)}`;
+    else formatted = `${digits.slice(0, 2)}:${digits.slice(2)}`;
+    input.value = formatted;
+  }
+  
   window.handleEditorDateInput = function(input) {
     let val = input.value.replace(/\D/g, '');
-    if (val.length === 4) {
-      val = `${val.slice(0,2)}/${val.slice(2,4)}/2026`;
-      input.value = val;
-    } else if (val.length === 8) {
-      val = `${val.slice(0,2)}/${val.slice(2,4)}/${val.slice(4,8)}`;
-      input.value = val;
-    }
+    if (val.length === 4) { val = `${val.slice(0,2)}/${val.slice(2,4)}/2026`; input.value = val; }
+    else if (val.length === 8) { val = `${val.slice(0,2)}/${val.slice(2,4)}/${val.slice(4,8)}`; input.value = val; }
     window.saveCurrentRoutineMeta();
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
     const prog = window.dbState.programs.find(p => p.id === r.programId);
     if (prog && val.length >= 8) {
       const calculatedPgm = calculatePgmNumForDate(prog, val);
-      document.getElementById('progNumber').value = calculatedPgm;
-      r.pgmNum = calculatedPgm;
-      window.saveDb();
+      document.getElementById('progNumber').value = calculatedPgm; r.pgmNum = calculatedPgm; window.saveDb();
     }
   }
 
@@ -1259,203 +1305,118 @@
     if (confirm('¿Vaciar rutina?')) {
       window.recordUndoState();
       const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
-      r.routine = [];
-      window.saveDb();
-      renderEditorTable();
+      r.routine = []; window.saveDb(); renderEditorTable();
     }
   }
 
   function updateEditorStats(totalBlocks, totalSecs) {
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
-    let tandasCount = 0;
-    let totalSecsNoTanda = 0;
-    let totalSecsWithTanda = 0;
-
+    let tandasCount = 0; let totalSecsNoTanda = 0; let totalSecsWithTanda = 0;
     (r.routine || []).forEach(item => {
       if (item.type === 'tanda') tandasCount++;
       const durationInSeconds = parseDurationToSeconds(item.duration);
       totalSecsWithTanda += durationInSeconds;
       if (item.type !== 'tanda') totalSecsNoTanda += durationInSeconds;
     });
-
-    document.getElementById('statSecs').innerText = totalSecs;
-    document.getElementById('statTandas').innerText = tandasCount;
+    document.getElementById('statSecs').innerText = totalSecs; document.getElementById('statTandas').innerText = tandasCount;
     document.getElementById('statBlocks').innerText = totalBlocks;
-    document.getElementById('statDurNoTanda').innerText = formatSeconds(totalSecsNoTanda);
-    document.getElementById('statDurTotal').innerText = formatSeconds(totalSecsWithTanda);
+    document.getElementById('statDurNoTanda').innerText = formatSeconds(totalSecsNoTanda); document.getElementById('statDurTotal').innerText = formatSeconds(totalSecsWithTanda);
+  }
+  window.updateEditorStatsOnly = function() {
+    const r = window.dbState.routines.find(item => item.id === window.activeRoutineId); if (!r) return;
+    let secCount = 0; let blockCount = 0; let inBlock = false;
+    (r.routine || []).forEach((item) => {
+      if (item.type !== 'tanda') { secCount++; if (!inBlock) { blockCount++; inBlock = true; } }
+      else inBlock = false;
+    });
+    updateEditorStats(blockCount, secCount);
   }
 
   window.handleFirstDateInput = function(input) {
     let val = input.value.replace(/\D/g, '');
-    if (val.length === 4) {
-      input.value = `${val.slice(0,2)}/${val.slice(2,4)}/2026`;
-    } else if (val.length === 8) {
-      input.value = `${val.slice(0,2)}/${val.slice(2,4)}/${val.slice(4,8)}`;
-    }
+    if (val.length === 4) input.value = `${val.slice(0,2)}/${val.slice(2,4)}/2026`;
+    else if (val.length === 8) input.value = `${val.slice(0,2)}/${val.slice(2,4)}/${val.slice(4,8)}`;
   }
-
   function getTodayFormatted() {
-    const now = new Date();
-    const d = String(now.getDate()).padStart(2,'0');
-    const m = String(now.getMonth()+1).padStart(2,'0');
-    return `${d}/${m}/${now.getFullYear()}`;
+    const now = new Date(); return `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
   }
-
   function getDayNameFromDate(dateStr) {
     if (!dateStr || dateStr.length < 8) return '';
-    const parts = dateStr.split('/');
-    const d = new Date(parts[2], parts[1]-1, parts[0]);
-    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-    return days[d.getDay()] || '';
+    const parts = dateStr.split('/'); const d = new Date(parts[2], parts[1]-1, parts[0]);
+    return ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][d.getDay()] || '';
   }
-
   function calculatePgmNumForDate(prog, dateStr) {
     if (!prog.firstDate || !dateStr) return '001';
-    const p1 = prog.firstDate.split('/');
-    const d1 = new Date(p1[2], p1[1]-1, p1[0]);
-    const p2 = dateStr.split('/');
-    const d2 = new Date(p2[2], p2[1]-1, p2[0]);
+    const p1 = prog.firstDate.split('/'); const d1 = new Date(p1[2], p1[1]-1, p1[0]);
+    const p2 = dateStr.split('/'); const d2 = new Date(p2[2], p2[1]-1, p2[0]);
     if (d2 < d1) return '001';
-    let count = 0;
-    let current = new Date(d1);
-    const daysList = prog.daysList || [];
+    let count = 0; let current = new Date(d1); const daysList = prog.daysList || [];
     while (current <= d2) {
-      const dayOfWeek = current.getDay();
-      if (daysList.length === 0 || daysList.includes(-1) || daysList.includes(dayOfWeek)) {
-        count++;
-      }
+      if (daysList.length === 0 || daysList.includes(-1) || daysList.includes(current.getDay())) count++;
       current.setDate(current.getDate() + 1);
     }
     return String(Math.max(1, count)).padStart(3, '0');
   }
-
   function getNextEmisionDate(lastDateStr, daysList) {
-    const parts = lastDateStr.split('/');
-    let current = new Date(parts[2], parts[1]-1, parts[0]);
-    current.setDate(current.getDate() + 1);
-    if (!daysList || daysList.length === 0 || daysList.includes(-1)) {
-      const d = String(current.getDate()).padStart(2,'0');
-      const m = String(current.getMonth()+1).padStart(2,'0');
-      return `${d}/${m}/${current.getFullYear()}`;
-    }
-    while (!daysList.includes(current.getDay())) {
-      current.setDate(current.getDate() + 1);
-    }
-    const d = String(current.getDate()).padStart(2,'0');
-    const m = String(current.getMonth()+1).padStart(2,'0');
-    return `${d}/${m}/${current.getFullYear()}`;
+    const parts = lastDateStr.split('/'); let current = new Date(parts[2], parts[1]-1, parts[0]); current.setDate(current.getDate() + 1);
+    if (!daysList || daysList.length === 0 || daysList.includes(-1)) return `${String(current.getDate()).padStart(2,'0')}/${String(current.getMonth()+1).padStart(2,'0')}/${current.getFullYear()}`;
+    while (!daysList.includes(current.getDay())) current.setDate(current.getDate() + 1);
+    return `${String(current.getDate()).padStart(2,'0')}/${String(current.getMonth()+1).padStart(2,'0')}/${current.getFullYear()}`;
   }
-
   function formatDaysText(list) {
     if (!list || list.length === 0 || list.includes(-1)) return 'Sin definir';
-    const names = { 1:'L', 2:'M', 3:'X', 4:'J', 5:'V', 6:'S', 0:'D' };
-    return list.map(d => names[d]).join(', ');
+    return list.map(d => ({ 1:'L', 2:'M', 3:'X', 4:'J', 5:'V', 6:'S', 0:'D' }[d])).join(', ');
   }
-
   function formatSeconds(sec) {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    return `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
   }
 
+  // GENERACIÓN DE PDF
   window.downloadPDF = function() {
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
     const prog = window.dbState.programs.find(p => p.id === r.programId);
     buildPdfDom(r, prog);
-    const template = document.getElementById('pdfTemplate');
-    template.style.display = 'block';
-    const cleanDate = r.date.replace(/\//g, '-');
-    const filename = `${r.name} - ${cleanDate} - RUTINA PGM N° ${r.pgmNum || '001'}.pdf`;
+    const template = document.getElementById('pdfTemplate'); template.style.display = 'block';
     const opt = {
-      margin: [10, 10, 10, 10],
-      filename: filename,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      margin: [10, 10, 10, 10], filename: `${r.name} - ${r.date.replace(/\//g, '-')} - RUTINA PGM N° ${r.pgmNum || '001'}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
-    html2pdf().set(opt).from(template).save().then(() => {
-      template.style.display = 'none';
-    });
+    html2pdf().set(opt).from(template).save().then(() => template.style.display = 'none');
   }
-
-  window.toggleSelectAllRoutines = function(masterCb) {
-    document.querySelectorAll('.routine-select-cb').forEach(cb => cb.checked = masterCb.checked);
-  }
-
+  window.toggleSelectAllRoutines = function(masterCb) { document.querySelectorAll('.routine-select-cb').forEach(cb => cb.checked = masterCb.checked); }
   window.exportBatchPDF = function() {
-    const selectedIds = [];
-    document.querySelectorAll('.routine-select-cb:checked').forEach(cb => selectedIds.push(cb.value));
-    if (selectedIds.length === 0) {
-      alert('Seleccioná al menos una rutina.');
-      return;
-    }
+    const selectedIds = []; document.querySelectorAll('.routine-select-cb:checked').forEach(cb => selectedIds.push(cb.value));
+    if (selectedIds.length === 0) { alert('Seleccioná al menos una rutina.'); return; }
     const prog = window.dbState.programs.find(p => p.id === window.activeProgramId);
-    const container = document.createElement('div');
-    container.style.background = '#ffffff';
-    container.style.color = '#000000';
-
+    const container = document.createElement('div'); container.style.background = '#ffffff'; container.style.color = '#000000';
     selectedIds.forEach((rid, index) => {
       const r = window.dbState.routines.find(item => item.id === rid);
-      const pageWrapper = document.createElement('div');
-      pageWrapper.style.padding = '20px';
+      const pageWrapper = document.createElement('div'); pageWrapper.style.padding = '20px';
       if (index > 0) pageWrapper.style.pageBreakBefore = 'always';
-      buildPdfDomIntoElement(r, prog, pageWrapper);
-      container.appendChild(pageWrapper);
+      buildPdfDomIntoElement(r, prog, pageWrapper); container.appendChild(pageWrapper);
     });
-
     document.body.appendChild(container);
-    const filename = `${prog.name} - SELECCION DE RUTINAS.pdf`;
     const opt = {
-      margin: [10, 10, 10, 10],
-      filename: filename,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      margin: [10, 10, 10, 10], filename: `${prog.name} - SELECCION DE RUTINAS.pdf`,
+      image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
-    html2pdf().set(opt).from(container).save().then(() => {
-      container.remove();
-    });
+    html2pdf().set(opt).from(container).save().then(() => container.remove());
   }
 
   function buildPdfDom(r, prog) {
-    const parent = document.getElementById('pdfTemplate');
-    parent.innerHTML = '';
-    buildPdfDomIntoElement(r, prog, parent);
+    const parent = document.getElementById('pdfTemplate'); parent.innerHTML = ''; buildPdfDomIntoElement(r, prog, parent);
   }
 
   function buildPdfDomIntoElement(r, prog, parentEl) {
-    const dayName = getDayNameFromDate(r.date).toUpperCase();
-    const timeText = (prog && prog.timeStart && prog.timeEnd) ? `${prog.timeStart}-${prog.timeEnd} HS` : (prog && prog.timeStart ? `${prog.timeStart} HS` : '');
-    const scheduleStr = dayName ? `${dayName}${timeText ? ' ' + timeText : ''}` : timeText;
-    const now = new Date();
-    const timeFormatted = `${now.toLocaleDateString()} A LAS ${now.toLocaleTimeString()} HS`;
-
-    let tandasCount = 0;
-    let secCount = 0;
-    let blockCount = 0;
-    let inBlock = false;
-    let totalSecsNoTanda = 0;
-    let totalSecsWithTanda = 0;
+    const scheduleStr = getDayNameFromDate(r.date).toUpperCase() + ((prog && prog.timeStart) ? ` ${prog.timeStart}${prog.timeEnd?'-'+prog.timeEnd:''} HS` : '');
+    let tandasCount = 0; let secCount = 0; let blockCount = 0; let inBlock = false;
+    let totalSecsNoTanda = 0; let totalSecsWithTanda = 0;
 
     (r.routine || []).forEach((item) => {
-      const durationInSeconds = parseDurationToSeconds(item.duration);
-      totalSecsWithTanda += durationInSeconds;
-
-      if (item.type === 'tanda') {
-        tandasCount++;
-        inBlock = false;
-      } else {
-        secCount++;
-        totalSecsNoTanda += durationInSeconds;
-        if (!inBlock) {
-          blockCount++;
-          inBlock = true;
-        }
-      }
+      const durSecs = parseDurationToSeconds(item.duration); totalSecsWithTanda += durSecs;
+      if (item.type === 'tanda') { tandasCount++; inBlock = false; }
+      else { secCount++; totalSecsNoTanda += durSecs; if (!inBlock) { blockCount++; inBlock = true; } }
     });
-
-    const durNoTandaStr = formatSeconds(totalSecsNoTanda);
-    const durTotalStr = formatSeconds(totalSecsWithTanda);
 
     parentEl.innerHTML = `
       <div style="font-family:'Inter', sans-serif;">
@@ -1479,207 +1440,124 @@
             <td style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">PRODUCCIÓN:</strong> ${r.producers || '-'}</td>
           </tr>
           <tr>
-            <td colspan="2" style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">DUR. SIN TANDAS:</strong> <span style="font-weight:700;">${durNoTandaStr}</span></td>
-            <td style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">DUR. TOTAL:</strong> <span style="font-weight:700;">${durTotalStr}</span></td>
+            <td colspan="2" style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">DUR. SIN TANDAS:</strong> <span style="font-weight:700;">${formatSeconds(totalSecsNoTanda)}</span></td>
+            <td style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">DUR. TOTAL:</strong> <span style="font-weight:700;">${formatSeconds(totalSecsWithTanda)}</span></td>
           </tr>
         </table>
+        
         <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:10.5px;">
-          <thead>
-            <tr>
-              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:40px;">BLOQUE</th>
-              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:25px;">N°</th>
-              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:45px;">HORA</th>
-              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:left;">TÍTULO / ESTILO</th>
-              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:left;">DETALLE / NOTAS</th>
-              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:left; width:110px;">APOYO AV / N°</th>
-              <th style="background:#000; color:#fff; padding:6px 8px; text-transform:uppercase; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:45px;">TIEMPO</th>
+          <!-- thead con display: table-header-group para salto de pagina -->
+          <thead style="display: table-header-group;">
+            <tr style="page-break-inside: avoid;">
+              <th style="background:#000; color:#fff; padding:6px 8px; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:40px;">BLOQUE</th>
+              <th style="background:#000; color:#fff; padding:6px 8px; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:25px;">N°</th>
+              <th style="background:#000; color:#fff; padding:6px 8px; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:45px;">HORA</th>
+              <th style="background:#000; color:#fff; padding:6px 8px; font-size:9px; font-weight:800; border:1px solid #000; text-align:left;">TÍTULO / ESTILO</th>
+              <th style="background:#000; color:#fff; padding:6px 8px; font-size:9px; font-weight:800; border:1px solid #000; text-align:left;">DETALLE / NOTAS</th>
+              <th style="background:#000; color:#fff; padding:6px 8px; font-size:9px; font-weight:800; border:1px solid #000; text-align:left; width:110px;">APOYO AV / N°</th>
+              <th style="background:#000; color:#fff; padding:6px 8px; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:45px;">TIEMPO</th>
             </tr>
           </thead>
           <tbody>
             ${generatePdfRowsHtml(r.routine, prog ? prog.timeStart : '')}
           </tbody>
         </table>
-        <div style="border-top:2px solid #000; padding-top:8px; display:flex; justify-content:space-between; font-size:8.5px; font-weight:700; color:#334155; text-transform:uppercase;">
-          RUTINA DE PROGRAMA – ${(r.name || '').toUpperCase()} ${(r.channel || '').toUpperCase()} – PGM N°${r.pgmNum || '001'} – IMPRESO EL ${timeFormatted}
+        <div style="border-top:2px solid #000; padding-top:8px; display:flex; justify-content:space-between; font-size:8.5px; font-weight:700; color:#334155;">
+          RUTINA DE PROGRAMA – ${(r.name || '').toUpperCase()} ${(r.channel || '').toUpperCase()} – PGM N°${r.pgmNum || '001'}
         </div>
       </div>
     `;
   }
 
   function generatePdfRowsHtml(routineData, timeStart) {
-    let secPdfCounter = 1;
-    let tandaPdfIndex = 1;
-    let blockGroups = [];
-    let currentBlockNum = 1;
-    let currentBlockItemsCount = 0;
-
-    let startSecs = parseStartSeconds(timeStart);
-    let currentCumulativeSecs = startSecs;
+    let secPdfCounter = 1; let tandaPdfIndex = 1;
+    let blockGroups = []; let currentBlockNum = 1; let currentBlockItemsCount = 0;
+    let currentCumulativeSecs = parseStartSeconds(timeStart);
 
     (routineData || []).forEach((item) => {
       if (item.type === 'tanda') {
-        if (currentBlockItemsCount > 0) {
-          blockGroups.push({ isBlock: true, blockNum: currentBlockNum++, count: currentBlockItemsCount });
-          currentBlockItemsCount = 0;
-        }
+        if (currentBlockItemsCount > 0) { blockGroups.push({ isBlock: true, blockNum: currentBlockNum++, count: currentBlockItemsCount }); currentBlockItemsCount = 0; }
         blockGroups.push({ isBlock: false, count: 1 });
-      } else {
-        currentBlockItemsCount++;
-      }
+      } else currentBlockItemsCount++;
     });
+    if (currentBlockItemsCount > 0) blockGroups.push({ isBlock: true, blockNum: currentBlockNum, count: currentBlockItemsCount });
 
-    if (currentBlockItemsCount > 0) {
-      blockGroups.push({ isBlock: true, blockNum: currentBlockNum, count: currentBlockItemsCount });
-    }
-
-    let groupPointer = 0;
-    let rowInGroupCounter = 0;
-    let htmlStr = '';
+    let groupPointer = 0; let rowInGroupCounter = 0; let htmlStr = '';
 
     (routineData || []).forEach((item) => {
       const isTanda = item.type === 'tanda';
-      const itemStartTimeStr = formatClockTime(currentCumulativeSecs);
+      const itemStartTimeStr = formatClockTime(currentCumulativeSecs); // Formato completo con segundos para impresión
       currentCumulativeSecs += parseDurationToSeconds(item.duration);
 
-      htmlStr += `<tr style="${isTanda ? 'background:#fee2e2 !important;' : ''}">`;
+      // page-break-inside: avoid evita que las filas se corten por la mitad entre paginas
+      htmlStr += `<tr style="page-break-inside: avoid; ${isTanda ? 'background:#fee2e2 !important;' : ''}">`;
 
       if (isTanda) {
-        const tandaTitle = `TANDA COMERCIAL N°${tandaPdfIndex++}`;
         htmlStr += `<td style="font-weight:800; font-size:10px; color:#991b1b; text-align:center; border:1px solid #fca5a5;">TANDA</td>`;
         htmlStr += `<td style="font-weight:700; font-family:monospace; font-size:9.5px; text-align:center; color:#991b1b; border:1px solid #fca5a5;">${itemStartTimeStr}</td>`;
-        htmlStr += `<td colspan="4" style="font-weight:800; color:#991b1b; text-transform:uppercase; font-size:10.5px; text-align:center; border:1px solid #fca5a5;">${tandaTitle}</td>`;
+        htmlStr += `<td colspan="4" style="font-weight:800; color:#991b1b; text-transform:uppercase; font-size:10.5px; text-align:center; border:1px solid #fca5a5;">TANDA COMERCIAL N°${tandaPdfIndex++}</td>`;
         htmlStr += `<td style="font-weight:700; font-family:monospace; font-size:10.5px; text-align:center; color:#991b1b; border:1px solid #fca5a5;">${item.duration}</td>`;
-        groupPointer++;
-        rowInGroupCounter = 0;
+        groupPointer++; rowInGroupCounter = 0;
       } else {
         if (rowInGroupCounter === 0) {
           const group = blockGroups[groupPointer];
           htmlStr += `<td style="font-weight:800; font-size:11px; color:#000; text-align:center; vertical-align:middle; border:1px solid #cbd5e1;" rowspan="${group.count}">B${group.blockNum}</td>`;
         }
-        let styleText = item.style === 'OTRO' ? item.styleCustom : item.style;
-        let avText = item.av === 'OTRO' ? item.avCustom : item.av;
         const formattedDetail = (item.detail || '-').replace(/\n/g, '<br>');
-
         htmlStr += `<td style="font-weight:700; color:#475569; text-align:center; border:1px solid #cbd5e1;">${secPdfCounter++}</td>`;
         htmlStr += `<td style="font-weight:700; font-family:monospace; font-size:9.5px; text-align:center; color:#0f172a; border:1px solid #cbd5e1;">${itemStartTimeStr}</td>`;
-        htmlStr += `<td style="border:1px solid #cbd5e1; padding:6px 7px;"><div style="font-weight:800; font-size:10.5px; color:#000;">${item.title}</div><div style="font-weight:600; text-transform:uppercase; font-size:8.5px; color:#64748b;">${styleText || ''}</div></td>`;
-        htmlStr += `<td style="border:1px solid #cbd5e1; font-size:9.5px; padding:6px 7px; line-height:1.25;">${formattedDetail}</td>`;
-        htmlStr += `<td style="border:1px solid #cbd5e1; padding:6px 7px;"><div style="font-size:9.5px; font-weight:700; color:#1e293b; text-transform:uppercase;">${avText !== 'NINGUNO' ? avText : '-'}</div>${item.avNum ? `<div style="font-size:8.5px; color:#64748b; font-weight:600;">N°: ${item.avNum}</div>` : ''}</td>`;
+        htmlStr += `<td style="border:1px solid #cbd5e1; padding:6px 7px;"><div style="font-weight:800; font-size:10.5px; color:#000;">${item.title}</div><div style="font-weight:600; font-size:8.5px; color:#64748b;">${item.style==='OTRO'?item.styleCustom:item.style}</div></td>`;
+        
+        // MODIFICACIÓN PDF LETRA MÁS GRANDE (12px) y espaciado para visión reducida
+        htmlStr += `<td style="border:1px solid #cbd5e1; font-size:12px; padding:10px 8px; line-height:1.45;">${formattedDetail}</td>`;
+        
+        const avText = item.av==='OTRO'?item.avCustom:item.av;
+        htmlStr += `<td style="border:1px solid #cbd5e1; padding:6px 7px;"><div style="font-size:9.5px; font-weight:700; color:#1e293b;">${avText!=='NINGUNO'?avText:'-'}</div>${item.avNum ? `<div style="font-size:8.5px; color:#64748b;">N°: ${item.avNum}</div>` : ''}</td>`;
         htmlStr += `<td style="font-weight:700; font-family:monospace; font-size:10.5px; text-align:center; border:1px solid #cbd5e1;">${item.duration}</td>`;
 
         rowInGroupCounter++;
-        if (rowInGroupCounter >= blockGroups[groupPointer].count) {
-          rowInGroupCounter = 0;
-          groupPointer++;
-        }
+        if (rowInGroupCounter >= blockGroups[groupPointer].count) { rowInGroupCounter = 0; groupPointer++; }
       }
       htmlStr += `</tr>`;
     });
     return htmlStr;
   }
 
-  window.openUsersModal = function() {
-    renderUsersList();
-    document.getElementById('modalUsers').classList.remove('hidden');
-    document.getElementById('modalUsers').style.display = 'flex';
-  }
-
+  // MODALES USUARIOS
+  window.openUsersModal = function() { renderUsersList(); document.getElementById('modalUsers').classList.remove('hidden'); document.getElementById('modalUsers').style.display = 'flex'; }
   function renderUsersList() {
-    const tbody = document.getElementById('usersListBody');
-    tbody.innerHTML = '';
-    const checksDiv = document.getElementById('userFormProgramsCheckboxes');
-    checksDiv.innerHTML = '';
-    window.dbState.programs.forEach(p => {
-      checksDiv.innerHTML += `<label style="font-size:0.8rem; display:inline-flex; align-items:center; gap:4px;">
-        <input type="checkbox" class="user-prog-cb" value="${p.id}"> ${p.name}
-      </label>`;
+    const tbody = document.getElementById('usersListBody'); tbody.innerHTML = '';
+    const checksDiv = document.getElementById('userFormProgramsCheckboxes'); checksDiv.innerHTML = '';
+    (window.dbState.programs || []).forEach(p => {
+      checksDiv.innerHTML += `<label style="font-size:0.8rem; display:inline-flex; align-items:center; gap:4px;"><input type="checkbox" class="user-prog-cb" value="${p.id}"> ${p.name}</label>`;
     });
-
-    window.dbState.users.forEach(u => {
-      const tr = document.createElement('tr');
-      const progsCount = (u.assignedPrograms || []).length;
+    (window.dbState.users || []).forEach(u => {
+      const tr = document.createElement('tr'); const progsCount = (u.assignedPrograms || []).length;
       tr.innerHTML = `
-        <td><strong>${u.username}</strong></td>
-        <td><span class="user-badge">${u.role.toUpperCase()}</span></td>
+        <td><strong>${u.username}</strong><br><span style="font-size:0.75rem; color:var(--text-muted);">${u.email}</span></td>
+        <td><span class="user-badge">${(u.role||'produccion').toUpperCase()}</span></td>
         <td>${u.role==='admin' ? 'Todos' : (progsCount > 0 ? `${progsCount} Asig.` : 'Ninguno')}</td>
-        <td style="text-align:center;">
-          <div style="display:flex; gap:4px; justify-content:center;">
-            <button class="btn btn-secondary btn-sm" onclick="editUser('${u.id}')">✏️</button>
-            ${u.username !== 'admin' ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')">✕</button>` : ''}
-          </div>
-        </td>
+        <td style="text-align:center;"><button class="btn btn-secondary btn-sm" onclick="editUser('${u.id}')">✏️ Editar</button></td>
       `;
       tbody.appendChild(tr);
     });
   }
-
   window.editUser = function(userId) {
     const u = window.dbState.users.find(item => item.id === userId);
     if (u) {
-      document.getElementById('userFormId').value = u.id;
-      document.getElementById('userFormName').value = u.username;
-      document.getElementById('userFormPass').value = u.pass;
-      document.getElementById('userFormRole').value = u.role;
-      document.querySelectorAll('.user-prog-cb').forEach(cb => {
-        cb.checked = (u.assignedPrograms || []).includes(cb.value);
-      });
+      document.getElementById('userFormId').value = u.id; document.getElementById('userFormName').value = `${u.username} (${u.email})`;
+      document.getElementById('userFormRole').value = u.role || 'produccion';
+      document.querySelectorAll('.user-prog-cb').forEach(cb => cb.checked = (u.assignedPrograms || []).includes(cb.value));
     }
   }
-
-  window.handleSaveUser = function(e) {
-    e.preventDefault();
-    const editId = document.getElementById('userFormId').value;
-    const assigned = [];
-    document.querySelectorAll('.user-prog-cb:checked').forEach(cb => assigned.push(cb.value));
-
-    const userData = {
-      id: editId || 'u_' + Date.now(),
-      username: document.getElementById('userFormName').value.trim(),
-      pass: document.getElementById('userFormPass').value.trim(),
-      role: document.getElementById('userFormRole').value,
-      assignedPrograms: assigned
-    };
-
-    if (editId) {
-      const idx = window.dbState.users.findIndex(u => u.id === editId);
-      window.dbState.users[idx] = userData;
-    } else {
-      window.dbState.users.push(userData);
-    }
-
-    window.saveDb();
-    document.getElementById('userFormId').value = '';
-    document.getElementById('userFormName').value = '';
-    document.getElementById('userFormPass').value = '';
-    renderUsersList();
+  window.handleSaveUserPerms = function(e) {
+    e.preventDefault(); const editId = document.getElementById('userFormId').value; if(!editId) return;
+    const assigned = []; document.querySelectorAll('.user-prog-cb:checked').forEach(cb => assigned.push(cb.value));
+    const idx = window.dbState.users.findIndex(u => u.id === editId);
+    if(idx > -1) { window.dbState.users[idx].role = document.getElementById('userFormRole').value; window.dbState.users[idx].assignedPrograms = assigned; window.saveDb(); }
+    document.getElementById('userFormId').value = ''; document.getElementById('userFormName').value = ''; renderUsersList();
   }
-
-  window.deleteUser = function(userId) {
-    if (confirm('¿Eliminar usuario?')) {
-      window.dbState.users = window.dbState.users.filter(u => u.id !== userId);
-      window.saveDb();
-      renderUsersList();
-    }
-  }
-
-  window.closeModal = function(id) {
-    const modal = document.getElementById(id);
-    modal.classList.add('hidden');
-    modal.style.display = 'none';
-  }
-
-  window.addEventListener('DOMContentLoaded', () => {
-    initFirebaseSync();
-    const savedUsername = localStorage.getItem('sicarp_current_user');
-    if (savedUsername) {
-      setTimeout(() => {
-        const foundUser = window.dbState.users.find(u => u.username.toLowerCase() === savedUsername.toLowerCase());
-        if (foundUser) {
-          initSession(foundUser);
-        }
-      }, 500);
-    }
-  });
+  window.closeModal = function(id) { const modal = document.getElementById(id); modal.classList.add('hidden'); modal.style.display = 'none'; }
 </script>
 </body>
 </html>
