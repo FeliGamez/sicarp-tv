@@ -557,33 +557,68 @@
 
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      const snapshot = await get(dbRef);
-      if (snapshot.exists()) window.dbState = snapshot.val(); else await set(dbRef, window.dbState); 
+      try {
+        const snapshot = await get(dbRef);
+        let db = snapshot.exists() ? snapshot.val() : null;
+        
+        // Blindaje: si la base no existe o está mal formateada, la inicializamos limpia
+        if (!db || typeof db !== 'object' || !Array.isArray(db.users)) {
+          db = { users: [], programs: [], routines: [] };
+          // Si es el primer usuario autenticado y la base estaba vacía, lo hacemos admin automáticamente
+          db.users.push({ 
+            id: user.uid, 
+            email: user.email, 
+            username: user.displayName || user.email.split('@')[0], 
+            role: 'admin', 
+            assignedPrograms: [] 
+          });
+          await set(dbRef, db);
+        }
 
-      let usersList = Array.isArray(window.dbState.users) ? window.dbState.users : Object.values(window.dbState.users || {});
-let dbUser = usersList.find(u => u.id === user.uid);
-      if (dbUser) { 
-        initSession(dbUser); startDbSync(); 
-      } else {
-        setTimeout(async () => {
-          const snap2 = await get(dbRef);
-          const db2 = snap2.exists() ? snap2.val() : window.dbState;
-          if (!(db2.users || []).find(u => u.id === user.uid) && !window.tempGoogleUser) {
-             document.getElementById('loginError').innerText = "Tu cuenta fue eliminada del panel por el Administrador."; 
-             document.getElementById('loginError').classList.remove('hidden'); 
-             await firebaseSignOut(auth);
-          }
-        }, 5000);
+        window.dbState = db;
+        let dbUser = (db.users || []).find(u => u.id === user.uid);
+
+        if (dbUser) {
+          initSession(dbUser);
+          startDbSync();
+        } else if (window.tempGoogleUser) {
+          // Si vino por Google y falta registrar el nombre, dejamos que abra el modal
+          return;
+        } else {
+          // Si el usuario existe en Auth pero fue borrado de la base de datos, lo registramos como producción por seguridad
+          const newUser = { 
+            id: user.uid, 
+            email: user.email, 
+            username: user.displayName || user.email.split('@')[0], 
+            role: 'produccion', 
+            assignedPrograms: [] 
+          };
+          db.users.push(newUser);
+          window.dbState = db;
+          await set(dbRef, db);
+          initSession(newUser);
+          startDbSync();
+        }
+      } catch (err) {
+        console.error("Error crítico en autenticación:", err);
+        document.getElementById('loginError').innerText = "Error al conectar con la base de datos.";
+        document.getElementById('loginError').classList.remove('hidden');
+        document.getElementById('authSubmitBtn').innerText = "Ingresar al Sistema";
       }
     } else {
       window.currentUser = null; window.activeProgramId = null; window.activeRoutineId = null;
-      document.getElementById('loginError').classList.add('hidden'); document.getElementById('appHeader').classList.add('hidden'); document.getElementById('mainContainer').classList.add('hidden');
-      document.getElementById('viewPrograms').classList.add('hidden'); document.getElementById('viewRoutinesList').classList.add('hidden'); document.getElementById('viewRoutineEditor').classList.add('hidden');
-      document.getElementById('viewLogin').classList.remove('hidden'); document.getElementById('authSubmitBtn').innerText = window.isAuthModeLogin ? "Ingresar al Sistema" : "Crear cuenta y entrar";
-      document.getElementById('authEmail').value = ''; document.getElementById('authPass').value = '';
+      document.getElementById('loginError').classList.add('hidden'); 
+      document.getElementById('appHeader').classList.add('hidden'); 
+      document.getElementById('mainContainer').classList.add('hidden');
+      document.getElementById('viewPrograms').classList.add('hidden'); 
+      document.getElementById('viewRoutinesList').classList.add('hidden'); 
+      document.getElementById('viewRoutineEditor').classList.add('hidden');
+      document.getElementById('viewLogin').classList.remove('hidden'); 
+      document.getElementById('authSubmitBtn').innerText = window.isAuthModeLogin ? "Ingresar al Sistema" : "Crear cuenta y entrar";
+      document.getElementById('authEmail').value = ''; 
+      document.getElementById('authPass').value = '';
     }
   });
-
   function startDbSync() {
     onValue(dbRef, (snapshot) => {
       if (snapshot.exists()) {
