@@ -560,7 +560,8 @@
       const snapshot = await get(dbRef);
       if (snapshot.exists()) window.dbState = snapshot.val(); else await set(dbRef, window.dbState); 
 
-      let dbUser = (window.dbState.users || []).find(u => u.id === user.uid);
+      let usersList = Array.isArray(window.dbState.users) ? window.dbState.users : Object.values(window.dbState.users || {});
+let dbUser = usersList.find(u => u.id === user.uid);
       if (dbUser) { 
         initSession(dbUser); startDbSync(); 
       } else {
