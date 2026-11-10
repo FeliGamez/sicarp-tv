@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SiCARP-TV - Sistema de Rutinas y Programas (v4.2)</title>
+  <title>SiCARP-TV - Sistema de Rutinas y Programas (v4.3)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -68,6 +68,10 @@
     
     tr.is-tanda { background: var(--tanda-bg) !important; }
     tr.is-tanda td { border-color: var(--tanda-border); }
+
+    /* Fila pendiente de duración (00:00) */
+    tr.pending-row td { background-color: rgba(217, 119, 6, 0.15) !important; border-bottom: 1px solid rgba(217, 119, 6, 0.4) !important; }
+    tr.pending-row .time-calc-cell { color: #fcd34d !important; }
     
     .drag-handle { cursor: grab; text-align: center; color: var(--text-muted); width: 30px; user-select: none; }
     .block-cell { text-align: center; font-weight: 800; font-size: 1.1rem; background: #0f172a; color: #60a5fa; width: 60px; }
@@ -83,7 +87,8 @@
     .nav-brand { font-weight: 800; font-size: 1.15rem; color: #fff; display: flex; align-items: center; gap: 8px; }
     .nav-brand span { font-size: 0.75rem; background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
     .nav-user { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: var(--text-muted); flex-wrap: wrap; }
-    .user-badge { background: #0f172a; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); color: #60a5fa; font-weight: 600; }
+    .user-badge { background: #0f172a; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); color: #60a5fa; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .user-badge:hover { background: var(--border-color); color: white; }
 
     .login-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%); padding: 15px; }
     .login-card { background: var(--card-bg); border: 1px solid var(--border-color); width: 100%; max-width: 400px; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
@@ -154,7 +159,7 @@
         <input type="email" id="authEmail" placeholder="correo@ejemplo.com" autocomplete="username" required>
       </div>
       <div class="form-group">
-        <label>Contraseña secreta</label>
+        <label>Contraseña</label>
         <div class="password-input-container">
           <input type="password" id="authPass" placeholder="Mínimo 6 caracteres" autocomplete="current-password" required>
           <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility()">
@@ -165,16 +170,6 @@
       
       <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
         <button type="submit" id="authSubmitBtn" class="btn btn-success" style="justify-content: center; padding: 12px;">Ingresar al Sistema</button>
-        
-        <div style="display:flex; align-items:center; gap:8px;">
-          <div style="height:1px; background:var(--border-color); flex:1;"></div>
-          <span style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">O iniciar con</span>
-          <div style="height:1px; background:var(--border-color); flex:1;"></div>
-        </div>
-
-        <button type="button" onclick="handleGoogleLogin()" class="btn" style="background:#ffffff; color:#0f172a; padding:12px; justify-content:center; border:1px solid #cbd5e1;">
-           <img src="https://www.svgrepo.com/show/475656/google-color.svg" style="width:18px; height:18px;"> Google
-        </button>
       </div>
 
       <div class="auth-toggle" onclick="toggleAuthMode()" id="authToggleText">¿No tenés cuenta? Registrate acá</div>
@@ -185,7 +180,7 @@
 
 <nav id="appHeader" class="hidden">
   <div class="nav-brand">
-    SiCARP-TV <span>v4.2</span>
+    SiCARP-TV <span>v4.3</span>
   </div>
   <div class="nav-user">
     <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; background: #0f172a; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color);">
@@ -193,7 +188,7 @@
       <span id="syncText">Conectando...</span>
     </div>
     <button id="btnNavUsers" class="btn btn-secondary btn-sm hidden" onclick="openUsersModal()">👥 Usuarios</button>
-    <div><span id="navUsername" class="user-badge">Cargando...</span></div>
+    <div><span id="navUsername" class="user-badge" title="Editar Perfil" onclick="openProfileModal()">Cargando...</span></div>
     <button class="btn btn-danger btn-sm" onclick="handleLogout()">Salir</button>
   </div>
 </nav>
@@ -301,19 +296,19 @@
   </div>
 </div>
 
-<!-- Modal Pedir Nombre a Usuarios de Google -->
-<div id="modalCompleteProfile" class="modal-backdrop hidden">
+<!-- Modal Mi Perfil -->
+<div id="modalProfile" class="modal-backdrop hidden">
   <div class="modal-content" style="max-width: 400px;">
-    <div style="font-weight: 800; font-size: 1.2rem; text-align:center; margin-bottom: 8px;">¡Bienvenido a SiCARP-TV!</div>
-    <div style="font-size: 0.85rem; color: var(--text-muted); text-align:center; margin-bottom: 20px;">
-      Como ingresaste con Google por primera vez, necesitamos que confirmes tu Nombre y Apellido real para tu perfil en el sistema.
+    <div class="modal-header">
+      <div style="font-weight: 700; font-size: 1.1rem;">Mi Perfil</div>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modalProfile')">✕</button>
     </div>
-    <form onsubmit="handleCompleteProfile(event)">
+    <form onsubmit="handleSaveProfile(event)">
       <div class="form-group">
-        <label>Nombre y Apellido</label>
-        <input type="text" id="profileFormName" placeholder="Tu nombre completo" required>
+        <label>Nombre de Usuario</label>
+        <input type="text" id="profileEditName" required>
       </div>
-      <button type="submit" class="btn btn-success" style="width: 100%; justify-content: center; padding: 12px; margin-top: 10px;">Completar Registro</button>
+      <button type="submit" class="btn btn-success" style="width: 100%; justify-content: center; margin-top: 10px;">Guardar Cambios</button>
     </form>
   </div>
 </div>
@@ -432,7 +427,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
   import { getDatabase, ref, set, get, onValue, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
-  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut as firebaseSignOut, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCqXF8iasjqF3G8UsSyvOC1Gu8PF1msBNQ",
@@ -453,7 +448,6 @@
   const defaultDb = { users: [], programs: [], routines: [] };
   window.dbState = defaultDb; window.currentUser = null; window.activeProgramId = null; window.activeRoutineId = null; window.tempProgramLogo = '';
   window.undoStack = []; window.redoStack = []; window.isAuthModeLogin = true;
-  window.tempGoogleUser = null;
 
   function generateId() { return Math.random().toString(36).substr(2, 9); }
 
@@ -487,49 +481,6 @@
     }
   }
 
-  window.addEventListener('DOMContentLoaded', async () => {
-    try {
-      const result = await getRedirectResult(auth);
-      if (result && result.user) {
-        const user = result.user; const snapshot = await get(dbRef);
-        let db = snapshot.exists() ? snapshot.val() : window.dbState;
-        let existing = (db.users || []).find(u => u.id === user.uid);
-        if (!existing) {
-           window.tempGoogleUser = user;
-           document.getElementById('modalCompleteProfile').classList.remove('hidden');
-           document.getElementById('modalCompleteProfile').style.display = 'flex';
-           if(user.displayName) document.getElementById('profileFormName').value = user.displayName;
-        }
-      }
-    } catch (error) { console.error("Error en redirect de Google:", error); }
-  });
-
-  window.handleCompleteProfile = async function(e) {
-    e.preventDefault();
-    const name = document.getElementById('profileFormName').value.trim();
-    if(!name || !window.tempGoogleUser) return;
-    document.getElementById('modalCompleteProfile').querySelector('.btn').innerText = "Guardando...";
-
-    const user = window.tempGoogleUser;
-    const snapshot = await get(dbRef); let db = snapshot.exists() ? snapshot.val() : window.dbState;
-    const isFirstUser = (db.users || []).length === 0;
-    db.users = db.users || [];
-    
-    const newUser = { id: user.uid, email: user.email, username: name, role: isFirstUser ? 'admin' : 'conduccion', assignedPrograms: [] };
-    db.users.push(newUser);
-    window.dbState = db; await set(dbRef, db);
-    
-    document.getElementById('modalCompleteProfile').classList.add('hidden'); document.getElementById('modalCompleteProfile').style.display = 'none';
-    window.tempGoogleUser = null;
-    initSession(newUser); startDbSync();
-  }
-
-  window.handleGoogleLogin = async function() {
-    const provider = new GoogleAuthProvider(); const errBox = document.getElementById('loginError'); errBox.classList.add('hidden');
-    try { await signInWithRedirect(auth, provider); }
-    catch (error) { console.error(error); errBox.innerText = 'Error al iniciar con Google.'; errBox.classList.remove('hidden'); }
-  }
-
   window.handleAuthSubmit = async function(e) {
     e.preventDefault();
     const email = document.getElementById('authEmail').value.trim(); const pass = document.getElementById('authPass').value.trim(); const name = document.getElementById('authName').value.trim();
@@ -542,8 +493,11 @@
       } else {
         const userCred = await createUserWithEmailAndPassword(auth, email, pass);
         const snapshot = await get(dbRef); let db = snapshot.exists() ? snapshot.val() : window.dbState;
-        const isFirstUser = (db.users || []).length === 0;
-        db.users = db.users || [];
+        
+        if (!db || typeof db !== 'object') db = { users: [], programs: [], routines: [] };
+        if (!Array.isArray(db.users)) db.users = Object.values(db.users || {});
+
+        const isFirstUser = db.users.length === 0;
         const newUser = { id: userCred.user.uid, email: email, username: name, role: isFirstUser ? 'admin' : 'conduccion', assignedPrograms: [] };
         db.users.push(newUser);
         window.dbState = db; await set(dbRef, db);
@@ -555,50 +509,41 @@
     }
   }
 
+  window.handleLogout = async function() {
+    try { await firebaseSignOut(auth); } catch (e) { console.error("Error al cerrar sesión", e); }
+  }
+
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       try {
         const snapshot = await get(dbRef);
         let db = snapshot.exists() ? snapshot.val() : null;
         
-        // Blindaje: si la base no existe o está mal formateada, la inicializamos limpia
-        if (!db || typeof db !== 'object' || !Array.isArray(db.users)) {
+        if (!db || typeof db !== 'object') {
           db = { users: [], programs: [], routines: [] };
-          // Si es el primer usuario autenticado y la base estaba vacía, lo hacemos admin automáticamente
-          db.users.push({ 
+        } else {
+          if (!Array.isArray(db.users)) db.users = Object.values(db.users || {});
+          if (!Array.isArray(db.programs)) db.programs = Object.values(db.programs || {});
+          if (!Array.isArray(db.routines)) db.routines = Object.values(db.routines || {});
+        }
+
+        let dbUser = db.users.find(u => u.id === user.uid);
+
+        if (!dbUser) {
+          dbUser = { 
             id: user.uid, 
             email: user.email, 
-            username: user.displayName || user.email.split('@')[0], 
-            role: 'admin', 
+            username: user.email.split('@')[0], 
+            role: db.users.length === 0 ? 'admin' : 'produccion', 
             assignedPrograms: [] 
-          });
+          };
+          db.users.push(dbUser);
           await set(dbRef, db);
         }
 
         window.dbState = db;
-        let dbUser = (db.users || []).find(u => u.id === user.uid);
-
-        if (dbUser) {
-          initSession(dbUser);
-          startDbSync();
-        } else if (window.tempGoogleUser) {
-          // Si vino por Google y falta registrar el nombre, dejamos que abra el modal
-          return;
-        } else {
-          // Si el usuario existe en Auth pero fue borrado de la base de datos, lo registramos como producción por seguridad
-          const newUser = { 
-            id: user.uid, 
-            email: user.email, 
-            username: user.displayName || user.email.split('@')[0], 
-            role: 'produccion', 
-            assignedPrograms: [] 
-          };
-          db.users.push(newUser);
-          window.dbState = db;
-          await set(dbRef, db);
-          initSession(newUser);
-          startDbSync();
-        }
+        initSession(dbUser);
+        startDbSync();
       } catch (err) {
         console.error("Error crítico en autenticación:", err);
         document.getElementById('loginError').innerText = "Error al conectar con la base de datos.";
@@ -619,19 +564,34 @@
       document.getElementById('authPass').value = '';
     }
   });
+
   function startDbSync() {
     onValue(dbRef, (snapshot) => {
       if (snapshot.exists()) {
-        let activeId = null; let cStart = 0, cEnd = 0; const ae = document.activeElement;
-        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT')) { activeId = ae.id; try { cStart = ae.selectionStart; cEnd = ae.selectionEnd; } catch(e){} }
-        window.dbState = snapshot.val(); refreshActiveViews();
+        let rawData = snapshot.val();
+        window.dbState = {
+          users: Array.isArray(rawData.users) ? rawData.users : Object.values(rawData.users || {}),
+          programs: Array.isArray(rawData.programs) ? rawData.programs : Object.values(rawData.programs || {}),
+          routines: Array.isArray(rawData.routines) ? rawData.routines : Object.values(rawData.routines || {})
+        };
+        
+        // ANTIFLICKER: Si el usuario actual está escribiendo dentro de la tabla de la rutina, evitamos redibujarla entera.
+        const ae = document.activeElement;
+        const isTypingInEditor = ae && ['INPUT', 'TEXTAREA', 'SELECT'].includes(ae.tagName) && document.getElementById('viewRoutineEditor').contains(ae);
+        
+        refreshActiveViews(isTypingInEditor);
+        
         document.getElementById('syncDot').style.background = '#22c55e'; document.getElementById('syncText').innerText = 'Sincronizado Cloud';
         
         if (window.currentUser) {
            const updatedMe = window.dbState.users.find(u => u.id === window.currentUser.id);
-           if(updatedMe) { window.currentUser.role = updatedMe.role; window.currentUser.assignedPrograms = updatedMe.assignedPrograms || []; }
+           if(updatedMe) { 
+             window.currentUser.role = updatedMe.role; 
+             window.currentUser.username = updatedMe.username;
+             window.currentUser.assignedPrograms = updatedMe.assignedPrograms || []; 
+             document.getElementById('navUsername').innerText = `${updatedMe.username} (${updatedMe.role.toUpperCase()})`;
+           }
         }
-        if (activeId) { setTimeout(() => { const el = document.getElementById(activeId); if (el) { el.focus(); try { el.setSelectionRange(cStart, cEnd); } catch(e){} } }, 0); }
       }
     }, (error) => { document.getElementById('syncDot').style.background = '#ef4444'; document.getElementById('syncText').innerText = 'Error de Sincronización'; });
   }
@@ -643,6 +603,27 @@
     if (user.role === 'admin') { document.getElementById('btnNavUsers').classList.remove('hidden'); document.getElementById('btnNewProgram').classList.remove('hidden'); }
     else { document.getElementById('btnNavUsers').classList.add('hidden'); if (user.role === 'conduccion') document.getElementById('btnNewProgram').classList.add('hidden'); else document.getElementById('btnNewProgram').classList.remove('hidden'); }
     navToPrograms();
+  }
+
+  window.openProfileModal = function() {
+    if(!window.currentUser) return;
+    document.getElementById('profileEditName').value = window.currentUser.username;
+    document.getElementById('modalProfile').classList.remove('hidden');
+    document.getElementById('modalProfile').style.display = 'flex';
+  }
+
+  window.handleSaveProfile = function(e) {
+    e.preventDefault();
+    const newName = document.getElementById('profileEditName').value.trim();
+    if(!newName) return;
+    window.currentUser.username = newName;
+    const idx = window.dbState.users.findIndex(u => u.id === window.currentUser.id);
+    if(idx > -1) {
+      window.dbState.users[idx].username = newName;
+      window.saveDb();
+    }
+    document.getElementById('navUsername').innerText = `${newName} (${window.currentUser.role.toUpperCase()})`;
+    closeModal('modalProfile');
   }
 
   window.saveDbCloud = async function() {
@@ -682,12 +663,19 @@
     }
   });
 
-  function refreshActiveViews() {
+  function refreshActiveViews(skipEditorRender = false) {
     if (!window.currentUser) return;
     const viewPrograms = document.getElementById('viewPrograms'); const viewRoutines = document.getElementById('viewRoutinesList'); const viewEditor = document.getElementById('viewRoutineEditor');
     if (!viewPrograms.classList.contains('hidden')) renderProgramsGrid();
     else if (!viewRoutines.classList.contains('hidden') && window.activeProgramId) renderRoutinesList();
-    else if (!viewEditor.classList.contains('hidden') && window.activeRoutineId) { updateEditorStatsOnly(); renderEditorTable(); }
+    else if (!viewEditor.classList.contains('hidden') && window.activeRoutineId) { 
+      updateEditorStatsOnly(); 
+      if (!skipEditorRender) {
+        renderEditorTable(); 
+      } else {
+        recalculateTimes(); 
+      }
+    }
   }
 
   window.navToPrograms = function() {
@@ -865,7 +853,15 @@
 
     let groupPointer = 0; let rowInGroupCounter = 0;
     routineData.forEach((item, index) => {
-      const uid = item.uid; const tr = document.createElement('tr'); if (item.type === 'tanda') tr.classList.add('is-tanda');
+      const uid = item.uid; 
+      const isPending = item.duration === '00:00' || item.duration === '';
+      const tr = document.createElement('tr'); 
+      
+      let rowClasses = [];
+      if (item.type === 'tanda') rowClasses.push('is-tanda');
+      if (isPending) rowClasses.push('pending-row');
+      if (rowClasses.length > 0) tr.className = rowClasses.join(' ');
+
       const itemStartTimeStr = formatClockTime(currentCumulativeSecs, true); currentCumulativeSecs += parseDurationToSeconds(item.duration);
       let html = `<td class="drag-handle no-print" draggable="true" ondragstart="handleDragStart(event, ${index})" ondragover="event.preventDefault()" ondrop="handleDrop(event, ${index})">☰</td><td class="sec-cell">${index + 1}</td>`;
       if (item.type === 'tanda') {
@@ -898,7 +894,19 @@
     if (val.includes(':')) { const parts = val.split(':'); formatted = `${String(parseInt(parts[0]) || 0).padStart(2, '0')}:${String(parseInt(parts[1]) || 0).padStart(2, '0')}`; }
     else { let digits = val.replace(/\D/g, ''); if (digits.length <= 2) formatted = `${digits.padStart(2, '0')}:00`; else if (digits.length === 3) formatted = `0${digits[0]}:${digits.slice(1)}`; else if (digits.length >= 4) { digits = digits.slice(-4); formatted = `${digits.slice(0,2)}:${digits.slice(2)}`; } }
     input.value = formatted; const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
-    if (r && r.routine[index]) { if (r.routine[index].duration !== formatted) window.recordUndoState(); r.routine[index].duration = formatted; window.saveDb(); recalculateTimes(); }
+    if (r && r.routine[index]) { 
+      if (r.routine[index].duration !== formatted) window.recordUndoState(); 
+      r.routine[index].duration = formatted; 
+      window.saveDb(); 
+      recalculateTimes(); 
+      
+      // Actualiza el color de la fila instantáneamente sin recargar la tabla entera
+      const tr = input.closest('tr');
+      if (tr && r.routine[index].type !== 'tanda') {
+        if (formatted === '00:00') tr.classList.add('pending-row');
+        else tr.classList.remove('pending-row');
+      }
+    }
   }
   window.updateRowData = function(index, field, val) { const r = window.dbState.routines.find(item => item.id === window.activeRoutineId); if (field === 'style' || field === 'av') window.recordUndoState(); r.routine[index][field] = val; window.saveDb(); if (field === 'style' || field === 'av') renderEditorTable(); }
   window.addRow = function(type) { window.recordUndoState(); const r = window.dbState.routines.find(item => item.id === window.activeRoutineId); if (type === 'tanda') r.routine.push({ uid: generateId(), type: 'tanda', duration: '05:00', style: 'TANDA', title: 'TANDA COMERCIAL', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' }); else r.routine.push({ uid: generateId(), type: 'sec', duration: '05:00', style: 'APERTURA', styleCustom: '', title: 'Nueva Sección', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' }); window.saveDb(); renderEditorTable(); }
@@ -1017,10 +1025,14 @@
           <tbody>
             ${generatePdfRowsHtml(r.routine, prog ? prog.timeStart : '')}
           </tbody>
+          <tfoot style="display: table-footer-group;">
+            <tr>
+              <td colspan="7" style="border-top:2px solid #000; padding-top:8px; padding-bottom:5px; text-align:left; font-size:8.5px; font-weight:700; color:#334155;">
+                RUTINA DE PROGRAMA – ${(r.name || '').toUpperCase()} ${(r.channel || '').toUpperCase()} – PGM N°${r.pgmNum || '001'}
+              </td>
+            </tr>
+          </tfoot>
         </table>
-        <div style="border-top:2px solid #000; padding-top:8px; display:flex; justify-content:space-between; font-size:8.5px; font-weight:700; color:#334155;">
-          RUTINA DE PROGRAMA – ${(r.name || '').toUpperCase()} ${(r.channel || '').toUpperCase()} – PGM N°${r.pgmNum || '001'}
-        </div>
       </div>
     `;
   }
@@ -1034,8 +1046,15 @@
     let groupPointer = 0; let rowInGroupCounter = 0; let htmlStr = '';
 
     (routineData || []).forEach((item) => {
-      const isTanda = item.type === 'tanda'; const itemStartTimeStr = formatClockTime(currentCumulativeSecs); currentCumulativeSecs += parseDurationToSeconds(item.duration);
-      htmlStr += `<tr style="page-break-inside: avoid; ${isTanda ? 'background:#fee2e2 !important;' : ''}">`;
+      const isTanda = item.type === 'tanda'; 
+      const isPending = item.duration === '00:00' || item.duration === '';
+      const itemStartTimeStr = formatClockTime(currentCumulativeSecs); currentCumulativeSecs += parseDurationToSeconds(item.duration);
+      
+      let trStyle = `page-break-inside: avoid; `;
+      if (isTanda) trStyle += `background:#fee2e2 !important; `;
+      else if (isPending) trStyle += `background:#fef3c7 !important; `; // Naranja claro/amarillo para el PDF
+
+      htmlStr += `<tr style="${trStyle}">`;
       if (isTanda) {
         htmlStr += `<td style="font-weight:800; font-size:10px; color:#991b1b; text-align:center; border:1px solid #fca5a5;">TANDA</td><td style="font-weight:700; font-family:monospace; font-size:9.5px; text-align:center; color:#991b1b; border:1px solid #fca5a5;">-</td><td style="font-weight:700; font-family:monospace; font-size:9.5px; text-align:center; color:#991b1b; border:1px solid #fca5a5;">${itemStartTimeStr}</td><td colspan="3" style="font-weight:800; color:#991b1b; text-transform:uppercase; font-size:10.5px; text-align:center; border:1px solid #fca5a5;">TANDA COMERCIAL N°${tandaPdfIndex++}</td><td style="font-weight:700; font-family:monospace; font-size:10.5px; text-align:center; color:#991b1b; border:1px solid #fca5a5;">${item.duration}</td>`;
         groupPointer++; rowInGroupCounter = 0;
