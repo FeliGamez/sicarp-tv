@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SiCARP-TV - Sistema de Rutinas y Programas (v4.3)</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <title>SiCARP-TV - Sistema de Rutinas y Programas (v4.4)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -133,8 +134,6 @@
 
     .live-mode input, .live-mode select, .live-mode textarea { pointer-events: none !important; opacity: 0.9; }
     .live-mode .no-print { display: none !important; }
-
-    #pdfTemplate { display: none; background: #ffffff; color: #000000; padding: 30px; font-family: 'Inter', sans-serif; }
   </style>
 </head>
 <body>
@@ -152,16 +151,16 @@
     <form id="authForm" autocomplete="on" onsubmit="handleAuthSubmit(event)">
       <div class="form-group hidden" id="registerNameGroup">
         <label>Nombre y Apellido</label>
-        <input type="text" id="authName" placeholder="Tu nombre real completo">
+        <input type="text" id="authName" name="name" placeholder="Tu nombre real completo" autocomplete="name">
       </div>
       <div class="form-group">
         <label>Correo Electrónico</label>
-        <input type="email" id="authEmail" placeholder="correo@ejemplo.com" autocomplete="username" required>
+        <input type="email" id="authEmail" name="email" placeholder="correo@ejemplo.com" autocomplete="username" required>
       </div>
       <div class="form-group">
         <label>Contraseña</label>
         <div class="password-input-container">
-          <input type="password" id="authPass" placeholder="Mínimo 6 caracteres" autocomplete="current-password" required>
+          <input type="password" id="authPass" name="password" placeholder="Mínimo 6 caracteres" autocomplete="current-password" required>
           <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility()">
             <svg id="eyeIcon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           </button>
@@ -180,7 +179,7 @@
 
 <nav id="appHeader" class="hidden">
   <div class="nav-brand">
-    SiCARP-TV <span>v4.3</span>
+    SiCARP-TV <span>v4.4</span>
   </div>
   <div class="nav-user">
     <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; background: #0f172a; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color);">
@@ -283,10 +282,10 @@
             <th style="width: 65px;">Bloque</th>
             <th style="width: 55px; text-align:center;">Hora</th>
             <th style="width: 80px;">Duración</th>
-            <th style="width: 120px;">Estilo</th>
+            <th style="width: 130px;">Estilo</th>
             <th>Título / Nota</th>
             <th style="min-width: 220px;">Detalle</th>
-            <th style="width: 160px;">Soporte AV</th>
+            <th style="width: 165px;">Soporte AV</th>
             <th class="no-print" style="width: 40px;"></th>
           </tr>
         </thead>
@@ -421,13 +420,11 @@
   </div>
 </div>
 
-<div id="pdfTemplate"></div>
-
 <!-- NÚCLEO DE CONEXIÓN FIREBASE -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-  import { getDatabase, ref, set, get, onValue, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
-  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  import { getDatabase, ref, set, get, update, onValue, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+  import { getAuth, setPersistence, inMemoryPersistence, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCqXF8iasjqF3G8UsSyvOC1Gu8PF1msBNQ",
@@ -443,13 +440,39 @@
   const app = initializeApp(firebaseConfig);
   const database = getDatabase(app);
   const auth = getAuth(app);
+
+  // Fuerza sesión solo en memoria: exige mail y contraseña cada vez que se abre o recarga la página
+  await setPersistence(auth, inMemoryPersistence);
+
   const dbRef = ref(database, 'sicarptv_sync/main_database');
 
   const defaultDb = { users: [], programs: [], routines: [] };
   window.dbState = defaultDb; window.currentUser = null; window.activeProgramId = null; window.activeRoutineId = null; window.tempProgramLogo = '';
   window.undoStack = []; window.redoStack = []; window.isAuthModeLogin = true;
+  window.isRegistering = false;
 
   function generateId() { return Math.random().toString(36).substr(2, 9); }
+
+  function deduplicateUsers(list) {
+    const raw = Array.isArray(list) ? list : Object.values(list || {});
+    const map = new Map();
+    raw.forEach(u => {
+      if (!u || !u.email) return;
+      const key = u.email.toLowerCase().trim();
+      if (!map.has(key)) {
+        map.set(key, { ...u, email: key });
+      } else {
+        const existing = map.get(key);
+        const mergedProgs = [...new Set([...(existing.assignedPrograms || []), ...(u.assignedPrograms || [])])];
+        if (u.role === 'admin' && existing.role !== 'admin') {
+          map.set(key, { ...u, email: key, assignedPrograms: mergedProgs });
+        } else {
+          existing.assignedPrograms = mergedProgs;
+        }
+      }
+    });
+    return Array.from(map.values());
+  }
 
   window.toggleAuthMode = function() {
     window.isAuthModeLogin = !window.isAuthModeLogin;
@@ -483,7 +506,9 @@
 
   window.handleAuthSubmit = async function(e) {
     e.preventDefault();
-    const email = document.getElementById('authEmail').value.trim(); const pass = document.getElementById('authPass').value.trim(); const name = document.getElementById('authName').value.trim();
+    const email = document.getElementById('authEmail').value.trim().toLowerCase();
+    const pass = document.getElementById('authPass').value.trim();
+    const name = document.getElementById('authName').value.trim();
     const errBox = document.getElementById('loginError'); errBox.classList.add('hidden'); 
     document.getElementById('authSubmitBtn').innerText = "Cargando...";
 
@@ -491,29 +516,48 @@
       if (window.isAuthModeLogin) {
         await signInWithEmailAndPassword(auth, email, pass);
       } else {
+        window.isRegistering = true;
         const userCred = await createUserWithEmailAndPassword(auth, email, pass);
-        const snapshot = await get(dbRef); let db = snapshot.exists() ? snapshot.val() : window.dbState;
+        const snapshot = await get(dbRef);
+        let db = snapshot.exists() ? snapshot.val() : { users: [], programs: [], routines: [] };
         
         if (!db || typeof db !== 'object') db = { users: [], programs: [], routines: [] };
-        if (!Array.isArray(db.users)) db.users = Object.values(db.users || {});
+        db.users = deduplicateUsers(db.users);
+        if (!Array.isArray(db.programs)) db.programs = Object.values(db.programs || {});
+        if (!Array.isArray(db.routines)) db.routines = Object.values(db.routines || {});
 
-        const isFirstUser = db.users.length === 0;
-        const newUser = { id: userCred.user.uid, email: email, username: name, role: isFirstUser ? 'admin' : 'conduccion', assignedPrograms: [] };
-        db.users.push(newUser);
-        window.dbState = db; await set(dbRef, db);
-        initSession(newUser); startDbSync();
+        let existingUser = db.users.find(u => u.email.toLowerCase() === email);
+        if (existingUser) {
+          existingUser.id = userCred.user.uid;
+          if (name) existingUser.username = name;
+        } else {
+          const isFirstUser = db.users.length === 0;
+          existingUser = { id: userCred.user.uid, email: email, username: name, role: isFirstUser ? 'admin' : 'conduccion', assignedPrograms: [] };
+          db.users.push(existingUser);
+        }
+
+        window.dbState = db;
+        await update(dbRef, { users: db.users });
+        window.isRegistering = false;
+        initSession(existingUser);
+        startDbSync();
       }
     } catch (error) {
+      window.isRegistering = false;
       errBox.innerText = error.code === 'auth/invalid-credential' ? 'Email o clave incorrectos.' : (error.code === 'auth/email-already-in-use' ? 'Ese email ya está registrado.' : 'Error de autenticación.');
-      errBox.classList.remove('hidden'); document.getElementById('authSubmitBtn').innerText = window.isAuthModeLogin ? "Ingresar al Sistema" : "Crear cuenta y entrar";
+      errBox.classList.remove('hidden');
+      document.getElementById('authSubmitBtn').innerText = window.isAuthModeLogin ? "Ingresar al Sistema" : "Crear cuenta y entrar";
     }
   }
 
   window.handleLogout = async function() {
+    leaveRoutinePresence();
     try { await firebaseSignOut(auth); } catch (e) { console.error("Error al cerrar sesión", e); }
   }
 
   onAuthStateChanged(auth, async (user) => {
+    if (window.isRegistering) return;
+
     if (user) {
       try {
         const snapshot = await get(dbRef);
@@ -522,23 +566,32 @@
         if (!db || typeof db !== 'object') {
           db = { users: [], programs: [], routines: [] };
         } else {
-          if (!Array.isArray(db.users)) db.users = Object.values(db.users || {});
+          db.users = deduplicateUsers(db.users);
           if (!Array.isArray(db.programs)) db.programs = Object.values(db.programs || {});
           if (!Array.isArray(db.routines)) db.routines = Object.values(db.routines || {});
         }
 
-        let dbUser = db.users.find(u => u.id === user.uid);
+        const userEmail = (user.email || '').toLowerCase().trim();
+        let dbUser = db.users.find(u => u.id === user.uid || (u.email && u.email.toLowerCase().trim() === userEmail));
+        let needsUsersSave = false;
 
         if (!dbUser) {
           dbUser = { 
             id: user.uid, 
-            email: user.email, 
-            username: user.email.split('@')[0], 
+            email: userEmail, 
+            username: userEmail.split('@')[0], 
             role: db.users.length === 0 ? 'admin' : 'produccion', 
             assignedPrograms: [] 
           };
           db.users.push(dbUser);
-          await set(dbRef, db);
+          needsUsersSave = true;
+        } else if (dbUser.id !== user.uid) {
+          dbUser.id = user.uid;
+          needsUsersSave = true;
+        }
+
+        if (needsUsersSave) {
+          await update(dbRef, { users: db.users });
         }
 
         window.dbState = db;
@@ -560,8 +613,6 @@
       document.getElementById('viewRoutineEditor').classList.add('hidden');
       document.getElementById('viewLogin').classList.remove('hidden'); 
       document.getElementById('authSubmitBtn').innerText = window.isAuthModeLogin ? "Ingresar al Sistema" : "Crear cuenta y entrar";
-      document.getElementById('authEmail').value = ''; 
-      document.getElementById('authPass').value = '';
     }
   });
 
@@ -569,22 +620,53 @@
     onValue(dbRef, (snapshot) => {
       if (snapshot.exists()) {
         let rawData = snapshot.val();
-        window.dbState = {
-          users: Array.isArray(rawData.users) ? rawData.users : Object.values(rawData.users || {}),
-          programs: Array.isArray(rawData.programs) ? rawData.programs : Object.values(rawData.programs || {}),
-          routines: Array.isArray(rawData.routines) ? rawData.routines : Object.values(rawData.routines || {})
-        };
-        
-        // ANTIFLICKER: Si el usuario actual está escribiendo dentro de la tabla de la rutina, evitamos redibujarla entera.
+        const incomingUsers = deduplicateUsers(rawData.users);
+        const incomingPrograms = Array.isArray(rawData.programs) ? rawData.programs : Object.values(rawData.programs || {});
+        const incomingRoutines = Array.isArray(rawData.routines) ? rawData.routines : Object.values(rawData.routines || {});
+
+        // Detectar elemento activo para no pisar lo que el usuario local está escribiendo
         const ae = document.activeElement;
         const isTypingInEditor = ae && ['INPUT', 'TEXTAREA', 'SELECT'].includes(ae.tagName) && document.getElementById('viewRoutineEditor').contains(ae);
+        const focusedId = isTypingInEditor ? ae.id : null;
+        const focusedVal = isTypingInEditor ? ae.value : null;
+
+        window.dbState = {
+          users: incomingUsers,
+          programs: incomingPrograms,
+          routines: incomingRoutines
+        };
+
+        // Si el usuario local está tipeando en un campo específico, preservamos ese valor en memoria local
+        if (focusedId && window.activeRoutineId) {
+          const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
+          if (r) {
+            if (focusedId === 'progChannel') r.channel = focusedVal;
+            else if (focusedId === 'progName') r.name = focusedVal;
+            else if (focusedId === 'progNumber') r.pgmNum = focusedVal;
+            else if (focusedId === 'progDate') r.date = focusedVal;
+            else if (focusedId === 'progHosts') r.hosts = focusedVal;
+            else if (focusedId === 'progProducers') r.producers = focusedVal;
+            else if (r.routine) {
+              const dashIdx = focusedId.indexOf('-');
+              if (dashIdx > -1) {
+                const fieldPrefix = focusedId.slice(0, dashIdx);
+                const uid = focusedId.slice(dashIdx + 1);
+                const rowItem = r.routine.find(x => x.uid === uid);
+                if (rowItem) {
+                  const fieldMap = { dur: 'duration', title: 'title', detail: 'detail', styleCustom: 'styleCustom', avCustom: 'avCustom', avNum: 'avNum' };
+                  if (fieldMap[fieldPrefix]) rowItem[fieldMap[fieldPrefix]] = focusedVal;
+                }
+              }
+            }
+          }
+        }
         
-        refreshActiveViews(isTypingInEditor);
+        refreshActiveViews(isTypingInEditor, focusedId);
         
         document.getElementById('syncDot').style.background = '#22c55e'; document.getElementById('syncText').innerText = 'Sincronizado Cloud';
         
         if (window.currentUser) {
-           const updatedMe = window.dbState.users.find(u => u.id === window.currentUser.id);
+           const updatedMe = window.dbState.users.find(u => u.id === window.currentUser.id || u.email === window.currentUser.email);
            if(updatedMe) { 
              window.currentUser.role = updatedMe.role; 
              window.currentUser.username = updatedMe.username;
@@ -612,7 +694,7 @@
     document.getElementById('modalProfile').style.display = 'flex';
   }
 
-  window.handleSaveProfile = function(e) {
+  window.handleSaveProfile = async function(e) {
     e.preventDefault();
     const newName = document.getElementById('profileEditName').value.trim();
     if(!newName) return;
@@ -620,10 +702,49 @@
     const idx = window.dbState.users.findIndex(u => u.id === window.currentUser.id);
     if(idx > -1) {
       window.dbState.users[idx].username = newName;
-      window.saveDb();
+      await window.saveNodeCloud('users', window.dbState.users);
     }
     document.getElementById('navUsername').innerText = `${newName} (${window.currentUser.role.toUpperCase()})`;
     closeModal('modalProfile');
+  }
+
+  // Guardado granular por nodo para evitar pisar cambios simultáneos
+  window.saveNodeCloud = async function(path, value) {
+    try {
+      document.getElementById('syncDot').style.background = '#3b82f6';
+      document.getElementById('syncText').innerText = 'Guardando...';
+      const targetRef = ref(database, `sicarptv_sync/main_database/${path}`);
+      await set(targetRef, value);
+      document.getElementById('syncDot').style.background = '#22c55e';
+      document.getElementById('syncText').innerText = 'Sincronizado Cloud';
+    } catch (e) {
+      document.getElementById('syncDot').style.background = '#ef4444';
+      document.getElementById('syncText').innerText = 'Error al Guardar';
+    }
+  }
+
+  window.saveRowFieldCloud = async function(routineId, rowUid, field, val) {
+    try {
+      document.getElementById('syncDot').style.background = '#3b82f6';
+      document.getElementById('syncText').innerText = 'Guardando...';
+      const rIdx = (window.dbState.routines || []).findIndex(item => item.id === routineId);
+      if (rIdx === -1) return;
+      const rowIdx = (window.dbState.routines[rIdx].routine || []).findIndex(item => item.uid === rowUid);
+      if (rowIdx === -1) return;
+      const rowRef = ref(database, `sicarptv_sync/main_database/routines/${rIdx}/routine/${rowIdx}`);
+      await update(rowRef, { [field]: val });
+      document.getElementById('syncDot').style.background = '#22c55e';
+      document.getElementById('syncText').innerText = 'Sincronizado Cloud';
+    } catch (e) {
+      document.getElementById('syncDot').style.background = '#ef4444';
+      document.getElementById('syncText').innerText = 'Error al Guardar';
+    }
+  }
+
+  window.saveRoutineArrayCloud = async function(routineId) {
+    const rIdx = (window.dbState.routines || []).findIndex(item => item.id === routineId);
+    if (rIdx === -1) return;
+    await window.saveNodeCloud(`routines/${rIdx}/routine`, window.dbState.routines[rIdx].routine);
   }
 
   window.saveDbCloud = async function() {
@@ -638,7 +759,7 @@
     currentPresenceRef = ref(database, `sicarptv_presence/${routineId}/${window.currentUser.id}`); set(currentPresenceRef, { name: window.currentUser.username, timestamp: Date.now() }); onDisconnect(currentPresenceRef).remove();
     const routinePresenceRef = ref(database, `sicarptv_presence/${routineId}`); presenceUnsubscribe = onValue(routinePresenceRef, (snap) => renderPresence(snap.val()));
   }
-  function leaveRoutinePresence() { if (currentPresenceRef) { remove(currentPresenceRef); currentPresenceRef = null; } if (presenceUnsubscribe) { presenceUnsubscribe(); presenceUnsubscribe = null; } document.getElementById('presenceAvatars').innerHTML = ''; }
+  function leaveRoutinePresence() { if (currentPresenceRef) { remove(currentPresenceRef); currentPresenceRef = null; } if (presenceUnsubscribe) { presenceUnsubscribe(); presenceUnsubscribe = null; } const pa = document.getElementById('presenceAvatars'); if(pa) pa.innerHTML = ''; }
   function renderPresence(data) {
      const container = document.getElementById('presenceAvatars'); if (!container) return; container.innerHTML = ''; if (!data) return;
      Object.values(data).forEach(u => { const initial = u.name ? u.name.charAt(0).toUpperCase() : '?'; container.innerHTML += `<div class="avatar-circle" title="${u.name} editando...">${initial}</div>`; });
@@ -650,11 +771,11 @@
   }
   window.undoRoutineChange = function() {
     if (!window.activeRoutineId || window.undoStack.length === 0) return; const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
-    if (r) { window.redoStack.push(JSON.stringify(r.routine)); r.routine = JSON.parse(window.undoStack.pop()); window.saveDb(); }
+    if (r) { window.redoStack.push(JSON.stringify(r.routine)); r.routine = JSON.parse(window.undoStack.pop()); window.saveRoutineArrayCloud(r.id); renderEditorTable(); }
   }
   window.redoRoutineChange = function() {
     if (!window.activeRoutineId || window.redoStack.length === 0) return; const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
-    if (r) { window.undoStack.push(JSON.stringify(r.routine)); r.routine = JSON.parse(window.redoStack.pop()); window.saveDb(); }
+    if (r) { window.undoStack.push(JSON.stringify(r.routine)); r.routine = JSON.parse(window.redoStack.pop()); window.saveRoutineArrayCloud(r.id); renderEditorTable(); }
   }
   document.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey) {
@@ -663,17 +784,110 @@
     }
   });
 
-  function refreshActiveViews(skipEditorRender = false) {
+  function syncEditorDomInPlace(focusedId) {
+    const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
+    if (!r) return;
+
+    const metaMap = {
+      progChannel: r.channel || '',
+      progName: r.name || '',
+      progNumber: r.pgmNum || '001',
+      progDate: r.date || '',
+      progHosts: r.hosts || '',
+      progProducers: r.producers || ''
+    };
+    Object.entries(metaMap).forEach(([id, val]) => {
+      if (id !== focusedId) {
+        const el = document.getElementById(id);
+        if (el && el.value !== val) el.value = val;
+      }
+    });
+
+    const routineData = r.routine || [];
+    const existingRows = document.querySelectorAll('#routineBody tr');
+    if (existingRows.length !== routineData.length) {
+      const ae = document.activeElement;
+      let cStart = 0, cEnd = 0;
+      try { cStart = ae.selectionStart; cEnd = ae.selectionEnd; } catch(e) {}
+      renderEditorTable();
+      if (focusedId) {
+        const restored = document.getElementById(focusedId);
+        if (restored) { restored.focus(); try { restored.setSelectionRange(cStart, cEnd); } catch(e) {} }
+      }
+      return;
+    }
+
+    let needsFullRender = false;
+    routineData.forEach((item, idx) => {
+      const uid = item.uid;
+      const durEl = document.getElementById(`dur-${uid}`);
+      if (!durEl) { needsFullRender = true; return; }
+      if (`dur-${uid}` !== focusedId && durEl.value !== (item.duration || '')) durEl.value = item.duration || '';
+
+      if (item.type !== 'tanda') {
+        const titleEl = document.getElementById(`title-${uid}`);
+        const detailEl = document.getElementById(`detail-${uid}`);
+        const styleEl = document.getElementById(`style-${uid}`);
+        const avEl = document.getElementById(`av-${uid}`);
+        const avNumEl = document.getElementById(`avNum-${uid}`);
+        const styleCustomEl = document.getElementById(`styleCustom-${uid}`);
+        const avCustomEl = document.getElementById(`avCustom-${uid}`);
+
+        if (!titleEl || !detailEl || !styleEl || !avEl) { needsFullRender = true; return; }
+        if ((item.style === 'OTRO' && !styleCustomEl) || (item.style !== 'OTRO' && styleCustomEl)) { needsFullRender = true; return; }
+        if ((item.av === 'OTRO' && !avCustomEl) || (item.av !== 'OTRO' && avCustomEl)) { needsFullRender = true; return; }
+
+        if (`title-${uid}` !== focusedId && titleEl.value !== (item.title || '')) titleEl.value = item.title || '';
+        if (`detail-${uid}` !== focusedId && detailEl.value !== (item.detail || '')) detailEl.value = item.detail || '';
+        if (`style-${uid}` !== focusedId && styleEl.value !== (item.style || '')) styleEl.value = item.style || '';
+        if (`av-${uid}` !== focusedId && avEl.value !== (item.av || '')) avEl.value = item.av || '';
+        if (avNumEl && `avNum-${uid}` !== focusedId && avNumEl.value !== (item.avNum || '')) avNumEl.value = item.avNum || '';
+        if (styleCustomEl && `styleCustom-${uid}` !== focusedId && styleCustomEl.value !== (item.styleCustom || '')) styleCustomEl.value = item.styleCustom || '';
+        if (avCustomEl && `avCustom-${uid}` !== focusedId && avCustomEl.value !== (item.avCustom || '')) avCustomEl.value = item.avCustom || '';
+
+        const tr = existingRows[idx];
+        if (tr) {
+          const isPending = item.duration === '00:00' || item.duration === '';
+          if (isPending) tr.classList.add('pending-row');
+          else tr.classList.remove('pending-row');
+        }
+      }
+    });
+
+    if (needsFullRender) {
+      const ae = document.activeElement;
+      let cStart = 0, cEnd = 0;
+      try { cStart = ae.selectionStart; cEnd = ae.selectionEnd; } catch(e) {}
+      renderEditorTable();
+      if (focusedId) {
+        const restored = document.getElementById(focusedId);
+        if (restored) { restored.focus(); try { restored.setSelectionRange(cStart, cEnd); } catch(e) {} }
+      }
+      return;
+    }
+
+    recalculateTimes();
+  }
+
+  function refreshActiveViews(skipEditorRender = false, focusedId = null) {
     if (!window.currentUser) return;
     const viewPrograms = document.getElementById('viewPrograms'); const viewRoutines = document.getElementById('viewRoutinesList'); const viewEditor = document.getElementById('viewRoutineEditor');
     if (!viewPrograms.classList.contains('hidden')) renderProgramsGrid();
     else if (!viewRoutines.classList.contains('hidden') && window.activeProgramId) renderRoutinesList();
     else if (!viewEditor.classList.contains('hidden') && window.activeRoutineId) { 
-      updateEditorStatsOnly(); 
       if (!skipEditorRender) {
+        const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
+        if (r) {
+          document.getElementById('progChannel').value = r.channel || '';
+          document.getElementById('progName').value = r.name || '';
+          document.getElementById('progNumber').value = r.pgmNum || '001';
+          document.getElementById('progDate').value = r.date || '';
+          document.getElementById('progHosts').value = r.hosts || '';
+          document.getElementById('progProducers').value = r.producers || '';
+        }
         renderEditorTable(); 
       } else {
-        recalculateTimes(); 
+        syncEditorDomInPlace(focusedId);
       }
     }
   }
@@ -769,7 +983,7 @@
     if (dayVal === -1) { document.querySelectorAll('#daysPicker .day-pill').forEach(p => p.classList.remove('selected')); el.classList.add('selected'); }
     else { const undefinedPill = document.querySelector('#daysPicker .day-pill[data-day="-1"]'); if (undefinedPill) undefinedPill.classList.remove('selected'); el.classList.toggle('selected'); }
   }
-  window.handleSaveProgram = function(e) {
+  window.handleSaveProgram = async function(e) {
     e.preventDefault(); const editId = document.getElementById('progFormId').value; const selectedDays = []; document.querySelectorAll('#daysPicker .day-pill.selected').forEach(p => selectedDays.push(parseInt(p.getAttribute('data-day'))));
     const progData = {
       id: editId || 'p_' + Date.now(), name: document.getElementById('progFormName').value, channel: document.getElementById('progFormChannel').value, logo: window.tempProgramLogo,
@@ -778,14 +992,19 @@
     };
     if(!window.dbState.programs) window.dbState.programs = [];
     if (editId) { const idx = window.dbState.programs.findIndex(p => p.id === editId); window.dbState.programs[idx] = progData; } else window.dbState.programs.push(progData);
-    window.saveDb(); closeModal('modalProgram'); renderProgramsGrid();
+    await window.saveNodeCloud('programs', window.dbState.programs); closeModal('modalProgram'); renderProgramsGrid();
   }
-  window.duplicateProgram = function(progId) {
+  window.duplicateProgram = async function(progId) {
     const p = window.dbState.programs.find(item => item.id === progId);
-    if (p) { const newP = JSON.parse(JSON.stringify(p)); newP.id = 'p_' + Date.now(); newP.name = `${p.name} (Copia)`; window.dbState.programs.push(newP); window.saveDb(); renderProgramsGrid(); }
+    if (p) { const newP = JSON.parse(JSON.stringify(p)); newP.id = 'p_' + Date.now(); newP.name = `${p.name} (Copia)`; window.dbState.programs.push(newP); await window.saveNodeCloud('programs', window.dbState.programs); renderProgramsGrid(); }
   }
-  window.deleteProgram = function(progId) {
-    if (confirm('¿Eliminar programa y rutinas?')) { window.dbState.programs = window.dbState.programs.filter(p => p.id !== progId); window.dbState.routines = (window.dbState.routines || []).filter(r => r.programId !== progId); window.saveDb(); renderProgramsGrid(); }
+  window.deleteProgram = async function(progId) {
+    if (confirm('¿Eliminar programa y rutinas?')) {
+      window.dbState.programs = window.dbState.programs.filter(p => p.id !== progId);
+      window.dbState.routines = (window.dbState.routines || []).filter(r => r.programId !== progId);
+      await update(dbRef, { programs: window.dbState.programs, routines: window.dbState.routines });
+      renderProgramsGrid();
+    }
   }
 
   window.openNewRoutineDialog = function() { document.getElementById('modalNewRoutine').classList.remove('hidden'); document.getElementById('modalNewRoutine').style.display = 'flex'; }
@@ -801,7 +1020,7 @@
     return String(maxNum + 1).padStart(3, '0');
   }
 
-  window.createNewRoutine = function(duplicateLast) {
+  window.createNewRoutine = async function(duplicateLast) {
     closeModal('modalNewRoutine'); const prog = window.dbState.programs.find(p => p.id === window.activeProgramId); const existingRoutines = (window.dbState.routines || []).filter(r => r.programId === window.activeProgramId);
     let baseStructure = [ { uid: generateId(), type: 'sec', duration: '05:00', style: 'APERTURA', styleCustom: '', title: 'Apertura', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' } ];
     let lastRoutine = null;
@@ -813,9 +1032,9 @@
     if (lastRoutine && lastRoutine.date) nextDateStr = getNextEmisionDate(lastRoutine.date, prog.daysList); else if (prog.firstDate) nextDateStr = prog.firstDate;
     
     const newRoutine = { id: 'r_' + Date.now(), programId: window.activeProgramId, pgmNum: calculateNextPgmNum(prog.id), date: nextDateStr, channel: prog.channel, name: prog.name, hosts: prog.defaultHosts, producers: prog.defaultProducers, routine: baseStructure };
-    if(!window.dbState.routines) window.dbState.routines = []; window.dbState.routines.push(newRoutine); window.saveDb(); navToEditor(newRoutine.id);
+    if(!window.dbState.routines) window.dbState.routines = []; window.dbState.routines.push(newRoutine); await window.saveNodeCloud('routines', window.dbState.routines); navToEditor(newRoutine.id);
   }
-  window.deleteRoutine = function(routineId) { if (confirm('¿Eliminar rutina?')) { window.dbState.routines = window.dbState.routines.filter(r => r.id !== routineId); window.saveDb(); renderRoutinesList(); } }
+  window.deleteRoutine = async function(routineId) { if (confirm('¿Eliminar rutina?')) { window.dbState.routines = window.dbState.routines.filter(r => r.id !== routineId); await window.saveNodeCloud('routines', window.dbState.routines); renderRoutinesList(); } }
 
   function parseDurationToSeconds(val) {
     if (!val) return 0;
@@ -873,10 +1092,10 @@
         if (rowInGroupCounter === 0) { html += `<td class="block-cell" rowspan="${blockGroups[groupPointer].count}">B${blockGroups[groupPointer].blockNum}</td>`; }
         secCount++; html += `<td class="time-calc-cell">${itemStartTimeStr}</td>`;
         html += `<td><input type="text" id="dur-${uid}" class="duration-input" value="${item.duration}" onfocus="this.select()" onblur="handleDurationBlur(this, ${index})" oninput="handleDurationInput(this, ${index})"></td>`;
-        html += `<td><select id="style-${uid}" onchange="updateRowData(${index}, 'style', this.value)"><option ${item.style==='APERTURA'?'selected':''}>APERTURA</option><option ${item.style==='COLUMNA'?'selected':''}>COLUMNA</option><option ${item.style==='DEBATE'?'selected':''}>DEBATE</option><option ${item.style==='ENTREVISTA'?'selected':''}>ENTREVISTA</option><option ${item.style==='INFORME'?'selected':''}>INFORME</option><option ${item.style==='MOVIL'?'selected':''}>MOVIL</option><option ${item.style==='NOTA'?'selected':''}>NOTA</option><option ${item.style==='PISO'?'selected':''}>PISO</option><option ${item.style==='PNT'?'selected':''}>PNT</option><option ${item.style==='CIERRE'?'selected':''}>CIERRE</option><option ${item.style==='OTRO'?'selected':''}>OTRO</option></select>${item.style === 'OTRO' ? `<input type="text" id="styleCustom-${uid}" class="custom-input" placeholder="Escribir..." value="${item.styleCustom || ''}" onfocus="this.select()" oninput="updateRowData(${index}, 'styleCustom', this.value)">` : ''}</td>`;
+        html += `<td><select id="style-${uid}" onchange="updateRowData(${index}, 'style', this.value)"><option ${item.style==='APERTURA'?'selected':''}>APERTURA</option><option ${item.style==='COLUMNA'?'selected':''}>COLUMNA</option><option ${item.style==='DEBATE'?'selected':''}>DEBATE</option><option ${item.style==='ENTREVISTA'?'selected':''}>ENTREVISTA</option><option ${item.style==='FALSO VIVO'?'selected':''}>FALSO VIVO</option><option ${item.style==='INFORME'?'selected':''}>INFORME</option><option ${item.style==='MOVIL'?'selected':''}>MOVIL</option><option ${item.style==='NOTA'?'selected':''}>NOTA</option><option ${item.style==='PISO'?'selected':''}>PISO</option><option ${item.style==='PNT'?'selected':''}>PNT</option><option ${item.style==='CIERRE'?'selected':''}>CIERRE</option><option ${item.style==='OTRO'?'selected':''}>OTRO</option></select>${item.style === 'OTRO' ? `<input type="text" id="styleCustom-${uid}" class="custom-input" placeholder="Escribir..." value="${item.styleCustom || ''}" onfocus="this.select()" oninput="updateRowData(${index}, 'styleCustom', this.value)">` : ''}</td>`;
         html += `<td><input type="text" id="title-${uid}" value="${item.title}" onfocus="this.select()" oninput="updateRowData(${index}, 'title', this.value)"></td>`;
         html += `<td><textarea rows="2" id="detail-${uid}" placeholder="Detalle / notas..." oninput="updateRowData(${index}, 'detail', this.value)">${item.detail || ''}</textarea></td>`;
-        html += `<td><div class="av-container"><select id="av-${uid}" onchange="updateRowData(${index}, 'av', this.value)"><option ${item.av==='NINGUNO'?'selected':''}>NINGUNO</option><option ${item.av==='APOYO'?'selected':''}>APOYO</option><option ${item.av==='TOTAL'?'selected':''}>TOTAL</option><option ${item.av==='INFORME'?'selected':''}>INFORME</option><option ${item.av==='OTRO'?'selected':''}>OTRO</option></select>${item.av === 'OTRO' ? `<input type="text" id="avCustom-${uid}" class="custom-input" placeholder="Escribir..." value="${item.avCustom || ''}" onfocus="this.select()" oninput="updateRowData(${index}, 'avCustom', this.value)">` : ''}<input type="text" id="avNum-${uid}" placeholder="N° Archivo" value="${item.avNum || ''}" onfocus="this.select()" oninput="updateRowData(${index}, 'avNum', this.value)"></div></td>`;
+        html += `<td><div class="av-container"><select id="av-${uid}" onchange="updateRowData(${index}, 'av', this.value)"><option ${item.av==='NINGUNO'?'selected':''}>NINGUNO</option><option ${item.av==='APOYO'?'selected':''}>APOYO</option><option ${item.av==='TOTAL'?'selected':''}>TOTAL</option><option ${item.av==='INFORME'?'selected':''}>INFORME</option><option ${item.av==='FALSO VIVO'?'selected':''}>FALSO VIVO</option><option ${item.av==='OTRO'?'selected':''}>OTRO</option></select>${item.av === 'OTRO' ? `<input type="text" id="avCustom-${uid}" class="custom-input" placeholder="Escribir..." value="${item.avCustom || ''}" onfocus="this.select()" oninput="updateRowData(${index}, 'avCustom', this.value)">` : ''}<input type="text" id="avNum-${uid}" placeholder="N° Archivo" value="${item.avNum || ''}" onfocus="this.select()" oninput="updateRowData(${index}, 'avNum', this.value)"></div></td>`;
         rowInGroupCounter++; if (rowInGroupCounter >= blockGroups[groupPointer].count) { rowInGroupCounter = 0; groupPointer++; }
       }
       html += `<td class="no-print" style="text-align:center;"><button class="btn btn-danger btn-action" onclick="deleteEditorRow(${index})">✕</button></td>`;
@@ -887,7 +1106,11 @@
 
   window.handleDurationInput = function(input, index) {
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
-    if (r && r.routine[index]) { r.routine[index].duration = input.value; recalculateTimes(); }
+    if (r && r.routine[index]) {
+      r.routine[index].duration = input.value;
+      recalculateTimes();
+      window.saveRowFieldCloud(r.id, r.routine[index].uid, 'duration', input.value);
+    }
   }
   window.handleDurationBlur = function(input, index) {
     let val = input.value; let formatted = '00:00';
@@ -897,10 +1120,9 @@
     if (r && r.routine[index]) { 
       if (r.routine[index].duration !== formatted) window.recordUndoState(); 
       r.routine[index].duration = formatted; 
-      window.saveDb(); 
+      window.saveRowFieldCloud(r.id, r.routine[index].uid, 'duration', formatted); 
       recalculateTimes(); 
       
-      // Actualiza el color de la fila instantáneamente sin recargar la tabla entera
       const tr = input.closest('tr');
       if (tr && r.routine[index].type !== 'tanda') {
         if (formatted === '00:00') tr.classList.add('pending-row');
@@ -908,12 +1130,43 @@
       }
     }
   }
-  window.updateRowData = function(index, field, val) { const r = window.dbState.routines.find(item => item.id === window.activeRoutineId); if (field === 'style' || field === 'av') window.recordUndoState(); r.routine[index][field] = val; window.saveDb(); if (field === 'style' || field === 'av') renderEditorTable(); }
-  window.addRow = function(type) { window.recordUndoState(); const r = window.dbState.routines.find(item => item.id === window.activeRoutineId); if (type === 'tanda') r.routine.push({ uid: generateId(), type: 'tanda', duration: '05:00', style: 'TANDA', title: 'TANDA COMERCIAL', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' }); else r.routine.push({ uid: generateId(), type: 'sec', duration: '05:00', style: 'APERTURA', styleCustom: '', title: 'Nueva Sección', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' }); window.saveDb(); renderEditorTable(); }
-  window.deleteEditorRow = function(index) { window.recordUndoState(); const r = window.dbState.routines.find(item => item.id === window.activeRoutineId); r.routine.splice(index, 1); window.saveDb(); renderEditorTable(); }
+  window.updateRowData = function(index, field, val) {
+    const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
+    if (!r || !r.routine[index]) return;
+    if (field === 'style' || field === 'av') window.recordUndoState();
+    r.routine[index][field] = val;
+    window.saveRowFieldCloud(r.id, r.routine[index].uid, field, val);
+    if (field === 'style' || field === 'av') renderEditorTable();
+  }
+  window.addRow = function(type) { window.recordUndoState(); const r = window.dbState.routines.find(item => item.id === window.activeRoutineId); if (type === 'tanda') r.routine.push({ uid: generateId(), type: 'tanda', duration: '05:00', style: 'TANDA', title: 'TANDA COMERCIAL', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' }); else r.routine.push({ uid: generateId(), type: 'sec', duration: '05:00', style: 'APERTURA', styleCustom: '', title: 'Nueva Sección', detail: '', av: 'NINGUNO', avCustom: '', avNum: '' }); window.saveRoutineArrayCloud(r.id); renderEditorTable(); }
+  window.deleteEditorRow = function(index) { window.recordUndoState(); const r = window.dbState.routines.find(item => item.id === window.activeRoutineId); r.routine.splice(index, 1); window.saveRoutineArrayCloud(r.id); renderEditorTable(); }
   window.handleDragStart = function(e, index) { e.dataTransfer.setData('text/plain', index); }
-  window.handleDrop = function(e, targetIndex) { e.preventDefault(); const sourceIndex = e.dataTransfer.getData('text/plain'); if (sourceIndex === "") return; window.recordUndoState(); const r = window.dbState.routines.find(item => item.id === window.activeRoutineId); const item = r.routine.splice(sourceIndex, 1)[0]; r.routine.splice(targetIndex, 0, item); window.saveDb(); renderEditorTable(); }
-  window.saveCurrentRoutineMeta = function() { const r = window.dbState.routines.find(item => item.id === window.activeRoutineId); if (r) { r.channel = document.getElementById('progChannel').value; r.name = document.getElementById('progName').value; r.pgmNum = document.getElementById('progNumber').value; r.date = document.getElementById('progDate').value; r.hosts = document.getElementById('progHosts').value; r.producers = document.getElementById('progProducers').value; window.saveDb(); } }
+  window.handleDrop = function(e, targetIndex) { e.preventDefault(); const sourceIndex = e.dataTransfer.getData('text/plain'); if (sourceIndex === "") return; window.recordUndoState(); const r = window.dbState.routines.find(item => item.id === window.activeRoutineId); const item = r.routine.splice(sourceIndex, 1)[0]; r.routine.splice(targetIndex, 0, item); window.saveRoutineArrayCloud(r.id); renderEditorTable(); }
+  window.saveCurrentRoutineMeta = async function() {
+    const rIdx = (window.dbState.routines || []).findIndex(item => item.id === window.activeRoutineId);
+    if (rIdx > -1) {
+      const r = window.dbState.routines[rIdx];
+      r.channel = document.getElementById('progChannel').value;
+      r.name = document.getElementById('progName').value;
+      r.pgmNum = document.getElementById('progNumber').value;
+      r.date = document.getElementById('progDate').value;
+      r.hosts = document.getElementById('progHosts').value;
+      r.producers = document.getElementById('progProducers').value;
+      try {
+        document.getElementById('syncDot').style.background = '#3b82f6';
+        document.getElementById('syncText').innerText = 'Guardando...';
+        await update(ref(database, `sicarptv_sync/main_database/routines/${rIdx}`), {
+          channel: r.channel, name: r.name, pgmNum: r.pgmNum,
+          date: r.date, hosts: r.hosts, producers: r.producers
+        });
+        document.getElementById('syncDot').style.background = '#22c55e';
+        document.getElementById('syncText').innerText = 'Sincronizado Cloud';
+      } catch (e) {
+        document.getElementById('syncDot').style.background = '#ef4444';
+        document.getElementById('syncText').innerText = 'Error al Guardar';
+      }
+    }
+  }
   window.handleTimeInput = function(input) { let digits = input.value.replace(/\D/g, ''); if (digits.length > 4) digits = digits.slice(-4); let formatted = ''; if (digits.length <= 2) formatted = digits; else if (digits.length === 3) formatted = `0${digits[0]}:${digits.slice(1)}`; else formatted = `${digits.slice(0, 2)}:${digits.slice(2)}`; input.value = formatted; }
   
   window.handleEditorDateInput = function(input) { 
@@ -921,7 +1174,7 @@
     window.saveCurrentRoutineMeta(); 
   }
   
-  window.resetRoutineData = function() { if (confirm('¿Vaciar rutina?')) { window.recordUndoState(); const r = window.dbState.routines.find(item => item.id === window.activeRoutineId); r.routine = []; window.saveDb(); renderEditorTable(); } }
+  window.resetRoutineData = function() { if (confirm('¿Vaciar rutina?')) { window.recordUndoState(); const r = window.dbState.routines.find(item => item.id === window.activeRoutineId); r.routine = []; window.saveRoutineArrayCloud(r.id); renderEditorTable(); } }
 
   function updateEditorStats(totalBlocks, totalSecs) {
     const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
@@ -948,127 +1201,295 @@
   function formatDaysText(list) { if (!list || list.length === 0 || list.includes(-1)) return 'Sin definir'; return list.map(d => ({ 1:'L', 2:'M', 3:'X', 4:'J', 5:'V', 6:'S', 0:'D' }[d])).join(', '); }
   function formatSeconds(sec) { return `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`; }
 
-  // PDF
-  window.downloadPDF = function() {
-    const r = window.dbState.routines.find(item => item.id === window.activeRoutineId); const prog = window.dbState.programs.find(p => p.id === r.programId);
-    buildPdfDom(r, prog); const template = document.getElementById('pdfTemplate'); template.style.display = 'block';
-    const opt = {
-      margin: [10, 10, 10, 10], filename: `${r.name} - ${r.date.replace(/\//g, '-')} - RUTINA PGM N° ${r.pgmNum || '001'}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, scrollY: 0, windowY: 0 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] }
-    };
-    html2pdf().set(opt).from(template).save().then(() => template.style.display = 'none');
+  // =========================================================================
+  // MOTOR DE EXPORTACIÓN PDF VECTORIAL ESTILO EXCEL (jsPDF + jsPDF-AutoTable)
+  // =========================================================================
+  function getImageDimensions(dataUrl) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ width: img.naturalWidth || 100, height: img.naturalHeight || 50 });
+      img.onerror = () => resolve({ width: 100, height: 50 });
+      img.src = dataUrl;
+    });
   }
+
+  async function renderRoutineToPdfDoc(doc, r, prog, isFirstRoutine) {
+    if (!isFirstRoutine) doc.addPage();
+
+    const pageWidth = doc.internal.pageSize.getWidth();   // 210mm
+    const pageHeight = doc.internal.pageSize.getHeight(); // 297mm
+    const marginLeft = 12;
+    const marginRight = 12;
+    const usableWidth = pageWidth - marginLeft - marginRight; // 186mm
+
+    const progNameUpper = (r.name || 'PROGRAMA').toUpperCase();
+    const channelUpper = (r.channel || 'CANAL').toUpperCase();
+    const pgmStr = r.pgmNum || '001';
+    const scheduleStr = getDayNameFromDate(r.date).toUpperCase() + ((prog && prog.timeStart) ? ` ${prog.timeStart}${prog.timeEnd ? '-' + prog.timeEnd : ''} HS` : '');
+    const footerText = `RUTINA DE PROGRAMA - ${progNameUpper} (${channelUpper}) - PGM N°${pgmStr}`;
+
+    let currentY = 14;
+
+    // 1. Encabezado superior del programa + Logo
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(17);
+    doc.setTextColor(0, 0, 0);
+    doc.text(progNameUpper, marginLeft, currentY + 5);
+
+    doc.setFontSize(9.5);
+    doc.setTextColor(71, 85, 105);
+    doc.text(channelUpper, marginLeft, currentY + 10.5);
+
+    doc.setFontSize(9);
+    doc.setTextColor(30, 41, 59);
+    doc.text(`RUTINA PGM-${pgmStr}${scheduleStr ? ` (${scheduleStr})` : ''}`, marginLeft, currentY + 15.5);
+
+    if (prog && prog.logo) {
+      try {
+        const dims = await getImageDimensions(prog.logo);
+        const maxLogoW = 46;
+        const maxLogoH = 16;
+        const ratio = Math.min(maxLogoW / dims.width, maxLogoH / dims.height);
+        const drawW = dims.width * ratio;
+        const drawH = dims.height * ratio;
+        const format = prog.logo.includes('image/png') ? 'PNG' : 'JPEG';
+        doc.addImage(prog.logo, format, pageWidth - marginRight - drawW, currentY, drawW, drawH);
+      } catch (e) { console.warn('No se pudo incrustar el logo en PDF:', e); }
+    }
+
+    currentY += 19;
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.6);
+    doc.line(marginLeft, currentY, pageWidth - marginRight, currentY);
+    currentY += 3;
+
+    // 2. Cálculo de estadísticas
+    let tandasCount = 0; let secCount = 0; let blockCount = 0; let inBlock = false;
+    let totalSecsNoTanda = 0; let totalSecsWithTanda = 0;
+    (r.routine || []).forEach((item) => {
+      const durSecs = parseDurationToSeconds(item.duration);
+      totalSecsWithTanda += durSecs;
+      if (item.type === 'tanda') { tandasCount++; inBlock = false; }
+      else { secCount++; totalSecsNoTanda += durSecs; if (!inBlock) { blockCount++; inBlock = true; } }
+    });
+
+    // 3. Tabla de metadatos (3x3)
+    doc.autoTable({
+      startY: currentY,
+      margin: { left: marginLeft, right: marginRight },
+      theme: 'grid',
+      styles: {
+        font: 'helvetica',
+        fontSize: 8.2,
+        cellPadding: 2.2,
+        textColor: [15, 23, 42],
+        lineColor: [203, 213, 225],
+        lineWidth: 0.25
+      },
+      columnStyles: {
+        0: { cellWidth: usableWidth * 0.33 },
+        1: { cellWidth: usableWidth * 0.33 },
+        2: { cellWidth: usableWidth * 0.34 }
+      },
+      body: [
+        [
+          `FECHA: ${r.date || '-'}`,
+          `BLOQUES: ${blockCount}`,
+          `CONDUCCIÓN: ${r.hosts || '-'}`
+        ],
+        [
+          `TANDAS: ${tandasCount}`,
+          `SECCIONES: ${secCount}`,
+          `PRODUCCIÓN: ${r.producers || '-'}`
+        ],
+        [
+          { content: `DUR. SIN TANDAS: ${formatSecondsHHMMSS(totalSecsNoTanda)}`, colSpan: 2, styles: { fontStyle: 'bold' } },
+          { content: `DUR. TOTAL: ${formatSecondsHHMMSS(totalSecsWithTanda)}`, styles: { fontStyle: 'bold' } }
+        ]
+      ]
+    });
+
+    const tableStartY = doc.lastAutoTable.finalY + 4;
+
+    // 4. Preparar filas de la escaleta con Bloques agrupados (rowSpan)
+    const routineData = r.routine || [];
+    let blockGroups = [];
+    let currentBlockNum = 1;
+    let currentBlockItemsCount = 0;
+    routineData.forEach((item) => {
+      if (item.type === 'tanda') {
+        if (currentBlockItemsCount > 0) {
+          blockGroups.push({ isBlock: true, blockNum: currentBlockNum++, count: currentBlockItemsCount });
+          currentBlockItemsCount = 0;
+        }
+        blockGroups.push({ isBlock: false, count: 1 });
+      } else {
+        currentBlockItemsCount++;
+      }
+    });
+    if (currentBlockItemsCount > 0) {
+      blockGroups.push({ isBlock: true, blockNum: currentBlockNum, count: currentBlockItemsCount });
+    }
+
+    let secPdfCounter = 1;
+    let tandaPdfIndex = 1;
+    let currentCumulativeSecs = parseStartSeconds(prog ? prog.timeStart : '');
+    let groupPointer = 0;
+    let rowInGroupCounter = 0;
+
+    const bodyRows = routineData.map((item) => {
+      const isTanda = item.type === 'tanda';
+      const isPending = item.duration === '00:00' || item.duration === '';
+      const itemStartTimeStr = formatClockTime(currentCumulativeSecs);
+      currentCumulativeSecs += parseDurationToSeconds(item.duration);
+
+      if (isTanda) {
+        const tandaLabel = `TANDA COMERCIAL N°${tandaPdfIndex++}`;
+        groupPointer++;
+        rowInGroupCounter = 0;
+        return [
+          { content: 'TANDA', styles: { halign: 'center', fontStyle: 'bold', textColor: [153, 27, 27], fillColor: [254, 226, 226], lineColor: [252, 165, 165], fontSize: 7.5 } },
+          { content: '-', styles: { halign: 'center', fontStyle: 'bold', textColor: [153, 27, 27], fillColor: [254, 226, 226], lineColor: [252, 165, 165] } },
+          { content: itemStartTimeStr, styles: { halign: 'center', fontStyle: 'bold', textColor: [153, 27, 27], fillColor: [254, 226, 226], lineColor: [252, 165, 165] } },
+          { content: tandaLabel, colSpan: 3, styles: { halign: 'center', fontStyle: 'bold', textColor: [153, 27, 27], fillColor: [254, 226, 226], lineColor: [252, 165, 165], fontSize: 8.5 } },
+          { content: item.duration || '00:00', styles: { halign: 'center', fontStyle: 'bold', textColor: [153, 27, 27], fillColor: [254, 226, 226], lineColor: [252, 165, 165] } }
+        ];
+      } else {
+        const rowFill = isPending ? [254, 243, 199] : [255, 255, 255];
+        const rowCells = [];
+
+        if (rowInGroupCounter === 0) {
+          rowCells.push({
+            content: `B${blockGroups[groupPointer].blockNum}`,
+            rowSpan: blockGroups[groupPointer].count,
+            styles: {
+              halign: 'center',
+              valign: 'middle',
+              fontStyle: 'bold',
+              fontSize: 9,
+              textColor: [0, 0, 0],
+              fillColor: [248, 250, 252]
+            }
+          });
+        }
+
+        const styleLabel = item.style === 'OTRO' ? (item.styleCustom || 'OTRO') : (item.style || '');
+        const titleBlock = `${item.title || '-'}${styleLabel ? `\n[${styleLabel}]` : ''}`;
+
+        const avLabel = item.av === 'OTRO' ? (item.avCustom || 'OTRO') : (item.av || 'NINGUNO');
+        const avMain = avLabel !== 'NINGUNO' ? avLabel : '-';
+        const avBlock = `${avMain}${item.avNum ? `\nN°: ${item.avNum}` : ''}`;
+
+        rowCells.push(
+          { content: String(secPdfCounter++), styles: { halign: 'center', fontStyle: 'bold', textColor: [71, 85, 105], fillColor: rowFill } },
+          { content: itemStartTimeStr, styles: { halign: 'center', fontStyle: 'bold', textColor: [15, 23, 42], fillColor: rowFill } },
+          { content: titleBlock, styles: { fontStyle: 'bold', textColor: [0, 0, 0], fillColor: rowFill } },
+          { content: item.detail || '-', styles: { fontStyle: 'normal', textColor: [15, 23, 42], fillColor: rowFill, fontSize: 8.5 } },
+          { content: avBlock, styles: { fontStyle: 'bold', textColor: [30, 41, 59], fillColor: rowFill, fontSize: 8 } },
+          { content: item.duration || '00:00', styles: { halign: 'center', fontStyle: 'bold', textColor: [0, 0, 0], fillColor: rowFill } }
+        );
+
+        rowInGroupCounter++;
+        if (rowInGroupCounter >= blockGroups[groupPointer].count) {
+          rowInGroupCounter = 0;
+          groupPointer++;
+        }
+
+        return rowCells;
+      }
+    });
+
+    const startPageOfThisRoutine = doc.internal.getNumberOfPages();
+
+    // 5. Renderizado de tabla con repetición automática de encabezado, salto limpio por fila y pie de página en cada hoja
+    doc.autoTable({
+      startY: tableStartY,
+      margin: { top: 14, left: marginLeft, right: marginRight, bottom: 18 },
+      showHead: 'everyPage',
+      rowPageBreak: 'avoid',
+      theme: 'grid',
+      headStyles: {
+        fillColor: [0, 0, 0],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 7.5,
+        halign: 'center',
+        valign: 'middle',
+        cellPadding: 2.5,
+        lineColor: [0, 0, 0],
+        lineWidth: 0.25
+      },
+      styles: {
+        font: 'helvetica',
+        fontSize: 8.2,
+        cellPadding: 2.5,
+        valign: 'middle',
+        overflow: 'linebreak',
+        lineColor: [203, 213, 225],
+        lineWidth: 0.25
+      },
+      columnStyles: {
+        0: { cellWidth: 16 }, // BLOQUE
+        1: { cellWidth: 16 }, // SECCIÓN
+        2: { cellWidth: 16 }, // HORA
+        3: { cellWidth: 40, halign: 'left' }, // TÍTULO
+        4: { cellWidth: 56, halign: 'left' }, // DETALLE
+        5: { cellWidth: 26, halign: 'left' }, // APOYO AV
+        6: { cellWidth: 16 }  // TIEMPO
+      },
+      head: [[
+        'BLOQUE',
+        'SECCIÓN',
+        'HORA',
+        { content: 'TÍTULO', styles: { halign: 'left' } },
+        { content: 'DETALLE', styles: { halign: 'left' } },
+        { content: 'APOYO AV', styles: { halign: 'left' } },
+        'TIEMPO'
+      ]],
+      body: bodyRows,
+      didDrawPage: function (data) {
+        const currentPageNum = doc.internal.getNumberOfPages();
+        const routinePageRel = currentPageNum - startPageOfThisRoutine + 1;
+
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.5);
+        doc.line(marginLeft, pageHeight - 13, pageWidth - marginRight, pageHeight - 13);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.8);
+        doc.setTextColor(51, 65, 85);
+        doc.text(footerText, marginLeft, pageHeight - 8.5);
+        doc.text(`Pág. ${routinePageRel}`, pageWidth - marginRight, pageHeight - 8.5, { align: 'right' });
+      }
+    });
+  }
+
+  window.downloadPDF = async function() {
+    const r = window.dbState.routines.find(item => item.id === window.activeRoutineId);
+    if (!r) return;
+    const prog = window.dbState.programs.find(p => p.id === r.programId);
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    await renderRoutineToPdfDoc(doc, r, prog, true);
+    doc.save(`${r.name} - ${(r.date || '').replace(/\//g, '-')} - RUTINA PGM N° ${r.pgmNum || '001'}.pdf`);
+  }
+
   window.toggleSelectAllRoutines = function(masterCb) { document.querySelectorAll('.routine-select-cb').forEach(cb => cb.checked = masterCb.checked); }
-  window.exportBatchPDF = function() {
+
+  window.exportBatchPDF = async function() {
     const selectedIds = []; document.querySelectorAll('.routine-select-cb:checked').forEach(cb => selectedIds.push(cb.value));
     if (selectedIds.length === 0) { alert('Seleccioná al menos una rutina.'); return; }
     const prog = window.dbState.programs.find(p => p.id === window.activeProgramId);
-    const container = document.createElement('div'); container.style.background = '#ffffff'; container.style.color = '#000000';
-    selectedIds.forEach((rid, index) => {
-      const r = window.dbState.routines.find(item => item.id === rid); const pageWrapper = document.createElement('div'); pageWrapper.style.padding = '20px';
-      if (index > 0) pageWrapper.style.pageBreakBefore = 'always'; buildPdfDomIntoElement(r, prog, pageWrapper); container.appendChild(pageWrapper);
-    });
-    document.body.appendChild(container);
-    const opt = {
-      margin: [10, 10, 10, 10], filename: `${prog.name} - SELECCION DE RUTINAS.pdf`,
-      image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, scrollY: 0, windowY: 0 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] }
-    };
-    html2pdf().set(opt).from(container).save().then(() => container.remove());
-  }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-  function buildPdfDom(r, prog) { const parent = document.getElementById('pdfTemplate'); parent.innerHTML = ''; buildPdfDomIntoElement(r, prog, parent); }
-  function buildPdfDomIntoElement(r, prog, parentEl) {
-    const scheduleStr = getDayNameFromDate(r.date).toUpperCase() + ((prog && prog.timeStart) ? ` ${prog.timeStart}${prog.timeEnd?'-'+prog.timeEnd:''} HS` : '');
-    let tandasCount = 0; let secCount = 0; let blockCount = 0; let inBlock = false; let totalSecsNoTanda = 0; let totalSecsWithTanda = 0;
-
-    (r.routine || []).forEach((item) => { const durSecs = parseDurationToSeconds(item.duration); totalSecsWithTanda += durSecs; if (item.type === 'tanda') { tandasCount++; inBlock = false; } else { secCount++; totalSecsNoTanda += durSecs; if (!inBlock) { blockCount++; inBlock = true; } } });
-
-    parentEl.innerHTML = `
-      <div style="font-family:'Inter', sans-serif;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:12px;">
-          <div>
-            <h1 style="font-size:22px; font-weight:800; text-transform:uppercase; margin-bottom:2px; color:#000;">${(r.name || 'PROGRAMA').toUpperCase()}</h1>
-            <h2 style="font-size:12px; color:#475569; font-weight:700; text-transform:uppercase; margin-bottom:4px;">${(r.channel || 'CANAL').toUpperCase()}</h2>
-            <p style="font-size:11px; color:#1e293b; font-weight:800; text-transform:uppercase;">RUTINA PGM-${r.pgmNum || '001'}${scheduleStr ? ` (${scheduleStr})` : ''}</p>
-          </div>
-          ${prog && prog.logo ? `<img src="${prog.logo}" style="max-height:55px; max-width:180px; object-fit:contain;">` : ''}
-        </div>
-        <table style="width:100%; border-collapse:collapse; margin-bottom:15px; font-size:10.5px; border:1px solid #cbd5e1;">
-          <tr>
-            <td style="padding:5px 8px; border:1px solid #cbd5e1; width:33%;"><strong style="color:#475569; font-size:9.5px;">FECHA:</strong> ${r.date || '-'}</td>
-            <td style="padding:5px 8px; border:1px solid #cbd5e1; width:33%;"><strong style="color:#475569; font-size:9.5px;">BLOQUES:</strong> ${blockCount}</td>
-            <td style="padding:5px 8px; border:1px solid #cbd5e1; width:34%;"><strong style="color:#475569; font-size:9.5px;">CONDUCCIÓN:</strong> ${r.hosts || '-'}</td>
-          </tr>
-          <tr>
-            <td style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">TANDAS:</strong> ${tandasCount}</td>
-            <td style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">SECCIONES:</strong> ${secCount}</td>
-            <td style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">PRODUCCIÓN:</strong> ${r.producers || '-'}</td>
-          </tr>
-          <tr>
-            <td colspan="2" style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">DUR. SIN TANDAS:</strong> <span style="font-weight:700;">${formatSecondsHHMMSS(totalSecsNoTanda)}</span></td>
-            <td style="padding:5px 8px; border:1px solid #cbd5e1;"><strong style="color:#475569; font-size:9.5px;">DUR. TOTAL:</strong> <span style="font-weight:700;">${formatSecondsHHMMSS(totalSecsWithTanda)}</span></td>
-          </tr>
-        </table>
-        
-        <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:10.5px;">
-          <thead style="display: table-header-group;">
-            <tr style="page-break-inside: avoid;">
-              <th style="background:#000; color:#fff; padding:6px 8px; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:40px;">BLOQUE</th>
-              <th style="background:#000; color:#fff; padding:6px 8px; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:45px;">SECCIÓN</th>
-              <th style="background:#000; color:#fff; padding:6px 8px; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:45px;">HORA</th>
-              <th style="background:#000; color:#fff; padding:6px 8px; font-size:9px; font-weight:800; border:1px solid #000; text-align:left;">TÍTULO</th>
-              <th style="background:#000; color:#fff; padding:6px 8px; font-size:9px; font-weight:800; border:1px solid #000; text-align:left;">DETALLE</th>
-              <th style="background:#000; color:#fff; padding:6px 8px; font-size:9px; font-weight:800; border:1px solid #000; text-align:left; width:100px;">APOYO AV</th>
-              <th style="background:#000; color:#fff; padding:6px 8px; font-size:9px; font-weight:800; border:1px solid #000; text-align:center; width:45px;">TIEMPO</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${generatePdfRowsHtml(r.routine, prog ? prog.timeStart : '')}
-          </tbody>
-          <tfoot style="display: table-footer-group;">
-            <tr>
-              <td colspan="7" style="border-top:2px solid #000; padding-top:8px; padding-bottom:5px; text-align:left; font-size:8.5px; font-weight:700; color:#334155;">
-                RUTINA DE PROGRAMA – ${(r.name || '').toUpperCase()} ${(r.channel || '').toUpperCase()} – PGM N°${r.pgmNum || '001'}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    `;
-  }
-
-  function generatePdfRowsHtml(routineData, timeStart) {
-    let secPdfCounter = 1; let tandaPdfIndex = 1; let blockGroups = []; let currentBlockNum = 1; let currentBlockItemsCount = 0;
-    let currentCumulativeSecs = parseStartSeconds(timeStart);
-    (routineData || []).forEach((item) => { if (item.type === 'tanda') { if (currentBlockItemsCount > 0) { blockGroups.push({ isBlock: true, blockNum: currentBlockNum++, count: currentBlockItemsCount }); currentBlockItemsCount = 0; } blockGroups.push({ isBlock: false, count: 1 }); } else currentBlockItemsCount++; });
-    if (currentBlockItemsCount > 0) blockGroups.push({ isBlock: true, blockNum: currentBlockNum, count: currentBlockItemsCount });
-
-    let groupPointer = 0; let rowInGroupCounter = 0; let htmlStr = '';
-
-    (routineData || []).forEach((item) => {
-      const isTanda = item.type === 'tanda'; 
-      const isPending = item.duration === '00:00' || item.duration === '';
-      const itemStartTimeStr = formatClockTime(currentCumulativeSecs); currentCumulativeSecs += parseDurationToSeconds(item.duration);
-      
-      let trStyle = `page-break-inside: avoid; `;
-      if (isTanda) trStyle += `background:#fee2e2 !important; `;
-      else if (isPending) trStyle += `background:#fef3c7 !important; `; // Naranja claro/amarillo para el PDF
-
-      htmlStr += `<tr style="${trStyle}">`;
-      if (isTanda) {
-        htmlStr += `<td style="font-weight:800; font-size:10px; color:#991b1b; text-align:center; border:1px solid #fca5a5;">TANDA</td><td style="font-weight:700; font-family:monospace; font-size:9.5px; text-align:center; color:#991b1b; border:1px solid #fca5a5;">-</td><td style="font-weight:700; font-family:monospace; font-size:9.5px; text-align:center; color:#991b1b; border:1px solid #fca5a5;">${itemStartTimeStr}</td><td colspan="3" style="font-weight:800; color:#991b1b; text-transform:uppercase; font-size:10.5px; text-align:center; border:1px solid #fca5a5;">TANDA COMERCIAL N°${tandaPdfIndex++}</td><td style="font-weight:700; font-family:monospace; font-size:10.5px; text-align:center; color:#991b1b; border:1px solid #fca5a5;">${item.duration}</td>`;
-        groupPointer++; rowInGroupCounter = 0;
-      } else {
-        if (rowInGroupCounter === 0) { htmlStr += `<td style="font-weight:800; font-size:11px; color:#000; text-align:center; vertical-align:middle; border:1px solid #cbd5e1;" rowspan="${blockGroups[groupPointer].count}">B${blockGroups[groupPointer].blockNum}</td>`; }
-        const formattedDetail = (item.detail || '-').replace(/\n/g, '<br>');
-        htmlStr += `<td style="font-weight:700; color:#475569; text-align:center; border:1px solid #cbd5e1;">${secPdfCounter++}</td><td style="font-weight:700; font-family:monospace; font-size:9.5px; text-align:center; color:#0f172a; border:1px solid #cbd5e1;">${itemStartTimeStr}</td><td style="border:1px solid #cbd5e1; padding:6px 7px;"><div style="font-weight:800; font-size:10.5px; color:#000;">${item.title}</div><div style="font-weight:600; font-size:8.5px; color:#64748b;">${item.style==='OTRO'?item.styleCustom:item.style}</div></td><td style="border:1px solid #cbd5e1; font-size:12px; padding:10px 8px; line-height:1.45;">${formattedDetail}</td>`;
-        const avText = item.av==='OTRO'?item.avCustom:item.av;
-        htmlStr += `<td style="border:1px solid #cbd5e1; padding:6px 7px;"><div style="font-size:9.5px; font-weight:700; color:#1e293b;">${avText!=='NINGUNO'?avText:'-'}</div>${item.avNum ? `<div style="font-size:8.5px; color:#64748b;">N°: ${item.avNum}</div>` : ''}</td><td style="font-weight:700; font-family:monospace; font-size:10.5px; text-align:center; border:1px solid #cbd5e1;">${item.duration}</td>`;
-        rowInGroupCounter++; if (rowInGroupCounter >= blockGroups[groupPointer].count) { rowInGroupCounter = 0; groupPointer++; }
+    for (let i = 0; i < selectedIds.length; i++) {
+      const r = window.dbState.routines.find(item => item.id === selectedIds[i]);
+      if (r) {
+        await renderRoutineToPdfDoc(doc, r, prog, i === 0);
       }
-      htmlStr += `</tr>`;
-    });
-    return htmlStr;
+    }
+    doc.save(`${prog.name} - SELECCION DE RUTINAS.pdf`);
   }
 
   window.openUsersModal = function() { renderUsersList(); document.getElementById('modalUsers').classList.remove('hidden'); document.getElementById('modalUsers').style.display = 'flex'; }
@@ -1093,16 +1514,16 @@
     const u = window.dbState.users.find(item => item.id === userId);
     if (u) { document.getElementById('userFormId').value = u.id; document.getElementById('userFormName').value = `${u.username} - ${u.email}`; document.getElementById('userFormRole').value = u.role || 'produccion'; document.querySelectorAll('.user-prog-cb').forEach(cb => cb.checked = (u.assignedPrograms || []).includes(cb.value)); }
   }
-  window.deleteUser = function(userId) {
+  window.deleteUser = async function(userId) {
     if (confirm('¿Estás seguro de que querés ELIMINAR el acceso completo de este usuario? (Tendrá que volver a registrarse para acceder)')) {
-      window.dbState.users = window.dbState.users.filter(u => u.id !== userId); window.saveDb(); renderUsersList();
+      window.dbState.users = window.dbState.users.filter(u => u.id !== userId); await window.saveNodeCloud('users', window.dbState.users); renderUsersList();
     }
   }
-  window.handleSaveUserPerms = function(e) {
+  window.handleSaveUserPerms = async function(e) {
     e.preventDefault(); const editId = document.getElementById('userFormId').value; if(!editId) { alert("Primero seleccioná un usuario de la lista tocando '✏️'"); return; }
     const assigned = []; document.querySelectorAll('.user-prog-cb:checked').forEach(cb => assigned.push(cb.value));
     const idx = window.dbState.users.findIndex(u => u.id === editId);
-    if(idx > -1) { window.dbState.users[idx].role = document.getElementById('userFormRole').value; window.dbState.users[idx].assignedPrograms = assigned; window.saveDb(); }
+    if(idx > -1) { window.dbState.users[idx].role = document.getElementById('userFormRole').value; window.dbState.users[idx].assignedPrograms = assigned; await window.saveNodeCloud('users', window.dbState.users); }
     document.getElementById('userFormId').value = ''; document.getElementById('userFormName').value = ''; renderUsersList();
   }
   window.closeModal = function(id) { const modal = document.getElementById(id); modal.classList.add('hidden'); modal.style.display = 'none'; }
